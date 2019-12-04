@@ -7,7 +7,7 @@
   <arg name="max_yawrate"             default=".75" />
   <arg name="max_forward_speed"       default="1.0" />
   <arg name="yaw_error_k"             default="1.0" />
-  <arg name="enable_beacon_replan"    default="true"/>
+  <arg name="enable_beacon_replan"    default="false"/>
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
@@ -26,6 +26,7 @@
     <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
     <remap from="motion_command_filter/beacon_replan"     to="task"/>
     <remap from="motion_command_filter/detect_beacon"     to="husky_safety/sf_beacon_detect"/>
+    <remap from="motion_command_filter/slowdown"          to="motion_command_filter/slowdown_fake"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
