@@ -1,0 +1,23 @@
+<launch>
+
+  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
+
+    <remap from="path_follower/path"              to="planner/actual_traj"/>
+    <remap from="path_follower/odometry"          to="odometry/ground_truth"/>
+    <remap from="path_follower/cmd_vel"           to="cmd_vel_topic"/>
+
+    <param name="yawrate_k0"                      value="1.0"/>
+    <param name="yawrate_kd"                      value="1.0"/>
+    <param name="max_yawrate"                     value="0.5"/>
+    <param name="max_forward_speed"               value="1.0"/>
+    <param name="turn_in_place_thresh"            value="1.0"/>
+    <param name="turn_in_place_yawrate"           value="0.25"/>
+    <param name="lookahead_distance_threshold"    value="0.5"/>
+    <param name="vehicle_frame"                   value="X1"/>
+    <param name="enable_debug"                    value="1"/>
+
+  </node>
+
+  <include file="$(find marble_guidance)/launch/tf2odom.launch"/>
+
+</launch>
