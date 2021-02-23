@@ -9,6 +9,7 @@
 
     <param name="total_scan_points"                 value="100"/>
     <param name="min_turnaround_distance"           value="0.1"/>
+    <param name="pitch_limit"                       value="20.0"/>
 
   </node>
 
