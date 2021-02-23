@@ -53,5 +53,12 @@ target_link_libraries(path_follower ${catkin_LIBRARIES} )
 add_executable(path_follower_node src/path_follower_node.cpp)
 target_link_libraries(path_follower_node path_follower ${catkin_LIBRARIES})
 
+add_library(backup_detector src/backup_detector.cpp)
+#add_dependencies(backup_detector ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(backup_detector ${catkin_LIBRARIES} )
+
+add_executable(backup_detector_node src/backup_detector_node.cpp)
+target_link_libraries(backup_detector_node backup_detector ${catkin_LIBRARIES})
+
 add_executable(tf2odom src/tf2odom.cpp)
 target_link_libraries(tf2odom ${catkin_LIBRARIES})
