@@ -14,6 +14,12 @@ int main(int argc, char** argv) {
         if(backup_detector.haveScan()){
           backup_detector.processLaserscan();
         }
+
+        if(backup_detector.haveIMU()){
+          backup_detector.processIMU();
+        }
+
+        backup_detector.publishBackupMsg();
         ros::spinOnce();
         loop_rate.sleep();
     }
