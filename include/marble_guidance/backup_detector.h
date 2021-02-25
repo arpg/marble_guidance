@@ -18,6 +18,11 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf/tf.h>
 
+// Octomap libaries
+#include <octomap/octomap.h>
+#include <octomap/ColorOcTree.h>
+#include <octomap_msgs/Octomap.h>
+#include <octomap_msgs/conversions.h>
 
 using namespace std;
 
@@ -69,6 +74,10 @@ class backupDetector{
     double imu_yaw_;
     double pitch_limit_;
     bool bad_attitude_flag_;
+
+    // Octomap
+    octomap::OcTree* occupancyTree; // OcTree object for holding occupancy Octomap
+    bool have_octomap_;
 
 };
 

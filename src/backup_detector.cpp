@@ -11,6 +11,8 @@ backupDetector::backupDetector(const ros::NodeHandle &node_handle,
 void backupDetector::init() {
 
   sub_laserscan_ = nh_.subscribe("laserscan", 1, &backupDetector::laserscanCb, this);
+  sub_octomap_ = nh_.subscribe("octomap", 1, &backupDetector::octomapCb, this);
+  sub_imu_ = nh_.subscribe("imu", 1, &backupDetector::imuCb, this);
 
   pub_backup_ = nh_.advertise<std_msgs::Bool>("enable_backup", 1);
 
@@ -23,6 +25,7 @@ void backupDetector::init() {
   bad_attitude_flag_ = false;
   have_scan_ = false;
   have_imu_ = false;
+  have_octomap_ = false;
 
   // Initialize the laserscan vector
   laserscan_ranges_.resize(num_scan_points_);
@@ -34,6 +37,15 @@ void backupDetector::laserscanCb(const sensor_msgs::LaserScanConstPtr& scan_msg)
   if(!have_scan_) have_scan_ = true;
   // Import the laserscan
   laserscan_ranges_ = scan_msg->ranges;
+}
+
+void octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
+{
+  if(!have_octomap_) have_octomap_ = true;
+  ROS_INFO("Occupancy octomap callback called");
+  if (msg->data.size() == 0) return;
+  delete occupancyTree;
+  occupancyTree = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(*msg);
 }
 
 void backupDetector::imuCb(const sensor_msgs::ImuConstPtr& imu_msg){
@@ -62,6 +74,20 @@ void backupDetector::processLaserscan(){
 
 }
 
+void backupDetector::processOctomap(){
+  // Check the surrounding octomap to see if we are able to turn around
+  // Need to query all voxels in a predefined radius around the vehicle.
+  // All must be unoccupied to turn around
+
+  // Generate a list of query coordinates
+  // These should be the centers of voxels in question
+  for(int i = 0; i < num_query_points; i++){
+    octomap::OcTreeKey coord_key;
+    coord_key = occupancyTree->coordToKey(x, y, z);
+  }
+
+}
+
 void backupDetector::processIMU(){
   // Check to see if the vehicle is pitched past the limit.
   // If so, we need to backup instead of turning around to prevent
@@ -84,6 +110,10 @@ bool backupDetector::haveIMU(){
 
 bool backupDetector::haveScan(){
   return have_scan_;
+}
+
+bool backupDetector::haveOctomap(){
+  return have_octomap_;
 }
 
 

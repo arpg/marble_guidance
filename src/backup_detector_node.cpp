@@ -19,6 +19,10 @@ int main(int argc, char** argv) {
           backup_detector.processIMU();
         }
 
+        if(backup_detector.haveOctomap()){
+          backup_detector.processOctomap();
+        }
+
         backup_detector.publishBackupMsg();
         ros::spinOnce();
         loop_rate.sleep();

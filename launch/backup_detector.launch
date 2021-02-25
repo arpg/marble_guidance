@@ -2,10 +2,13 @@
 
   <!-- Launch the octomap to laserscan node -->
   <!-- <include file="find"  -->
+  <arg name="vehicle_name"   default="X1"/>
 
   <node name="backup_detector" type= "backup_detector_node" pkg="marble_guidance" output="screen">
 
     <remap from="backup_detector/laserscan"         to="octomap_laserscan"/>
+    <remap from="backup_detector/octomap"           to="octomap"/>
+    <remap from="backup_detector/imu"               to="imu/data"/>
 
     <param name="total_scan_points"                 value="100"/>
     <param name="min_turnaround_distance"           value="0.1"/>
