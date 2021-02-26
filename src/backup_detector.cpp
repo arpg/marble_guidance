@@ -20,15 +20,66 @@ void backupDetector::init() {
   pnh_.param("min_turnaround_distance", min_turnaround_distance_, 0.1);
   pnh_.param("pitch_limit", pitch_limit_, 20.0);
 
+  // Query point grid parameters
+  pnh_.param("num_query_point_rows", num_query_point_rows_, 10);
+  pnh_.param("num_query_point_cols", num_query_point_cols_, 10);
+  pnh_.param("num_query_point_layers", num_query_point_layers_, 10);
+  pnh_.param("query_point_spacing", query_point_spacing_, .2);
+
+  pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
+
   backup_msg_.data = false;
   close_obstacle_flag_ = false;
   bad_attitude_flag_ = false;
   have_scan_ = false;
   have_imu_ = false;
   have_octomap_ = false;
+  num_query_point_rows_ = 10;
+  num_query_point_cols_ = 10;
+  num_query_point_layers_ = 10;
+  num_query_points_ = num_query_point_rows_*num_query_point_cols_*num_query_point_layers_;
+  query_point_spacing_ = .2;
 
   // Initialize the laserscan vector
   laserscan_ranges_.resize(num_scan_points_);
+
+  // Generate the query points for octomap voxel lookups
+  generateQueryPoints();
+
+}
+
+void backupDetector::generateQueryPoints(){
+  // Generate a simple gridded cube of query points around the vehicle
+  float half_width = (num_query_point_rows_*query_point_spacing_)/2.0;
+  float half_length = (num_query_point_cols_*query_point_spacing_)/2.0;
+  geometry_msgs::Point query_point;
+  for(int i = 0; i < num_query_point_rows_; i++){
+    for(int j = 0; j < num_query_point_cols_; j++){
+      for(int k = 0; k < num_query_point_layers_; k++){
+        query_point.x = half_width - i*query_point_spacing_;
+        query_point.y = half_length - j*query_point_spacing_;
+        query_point.z = k*query_point_spacing_;
+        query_point_vec_.push_back(query_point);
+      }
+    }
+  }
+}
+
+void backupDetector::publishQueryPointsPcl(){
+  // Convert the vector of query points into a pointcloud
+  pcl::PointCloud<PointXYZ> query_point_pcl;
+  pcl::PointXYZ pcl_point;
+  for (int i = 0; i < num_query_points_; i++){
+    pcl_point = {query_point_vec_[i].x, query_point_vec_[i].y, query_point_vec_[i].z};
+    query_point_pcl.push_back(pcl_point);
+  }
+
+  sensor_msgs::PointCloud2 cloud_msg;
+  pcl::toROSMsg(query_point_pcl, cloud_msg);
+  cloud_msg.header.frame_id = "X1/base_link";
+  cloud_msg.header.stamp = ros::Time::now();
+
+  pub_query_point_pcl_.publish(cloud_msg);
 
 }
 
@@ -44,8 +95,8 @@ void octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
   if(!have_octomap_) have_octomap_ = true;
   ROS_INFO("Occupancy octomap callback called");
   if (msg->data.size() == 0) return;
-  delete occupancyTree;
-  occupancyTree = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(*msg);
+  delete occupancyTree_;
+  occupancyTree_ = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(*msg);
 }
 
 void backupDetector::imuCb(const sensor_msgs::ImuConstPtr& imu_msg){
@@ -74,6 +125,32 @@ void backupDetector::processLaserscan(){
 
 }
 
+bool backupDetector::transformQueryPoints(){
+  // Transform the set of querypoints from the vehicle frame to the map frame
+  geometry_msgs::PointStamped initial_pt;
+  initial_pt.header.stamp = ros::Time::now();
+  geometry_msgs::TransformStamped transformStamped;
+  try{
+    transform_stamped = tf_buffer.lookupTransform("/X1/base_link", "/X1/map", ros::Time(0));
+    geometry_msgs::PointStamped transformed_pt;
+    transformed_pt.header.stamp = ros::Time::now();
+    transformed_query_point_vec_.clear();
+    for(int i= 0; i < num_query_points_; i++){
+      initial_pt.point.x = query_point_vec_[i].x;
+      initial_pt.point.y = query_point_vec_[i].y;
+      initial_pt.point.z = query_point_vec_[i].z;
+      tf2_geometry_msgs::do_transform(initial_pt, transformed_pt, transform_stamped);
+      transformed_query_point_vec_.push_back(transformed_pt);
+    }
+
+  }
+  catch (tf2::TransformException &ex) {
+    ROS_WARN("%s",ex.what());
+    ros::Duration(1.0).sleep();
+    continue;
+}
+}
+
 void backupDetector::processOctomap(){
   // Check the surrounding octomap to see if we are able to turn around
   // Need to query all voxels in a predefined radius around the vehicle.
@@ -81,9 +158,37 @@ void backupDetector::processOctomap(){
 
   // Generate a list of query coordinates
   // These should be the centers of voxels in question
-  for(int i = 0; i < num_query_points; i++){
-    octomap::OcTreeKey coord_key;
-    coord_key = occupancyTree->coordToKey(x, y, z);
+  // Convert the query coordinates in the map frame to
+  // voxel keys in the map frame.
+  geomtry_msgs::Point qp;
+  for(int i = 0; i < num_query_points_; i++){
+    qp = transformed_query_point_vec_[i].point;
+    coord_key_vec_.push_back(occupancyTree_->coordToKey(qp.x, qp.y, qp.z));
+  }
+
+  // Check each keyed voxel for occupancy
+  occupied_cell_indices_vec_.clear();
+  for(int i = 0; i < num_query_points_; i++){
+    OcTreeNodeStamped* current_node = occupancyTree_->search(coord_key_vec_[i]);
+    if(current_node && current_node->getLogOdds() > 0){
+      // Cell is occupied, need to track the index
+      occupied_cell_indices_vec_.push_back(i);
+    }
+  }
+
+  // Check all occupied cells to see if they exist
+  // within some predefined safety radius around the vehicle
+  // Also have a height check for tuning voxels near the wheels
+  float radius;
+  close_obstacle_flag_ = false;
+  for (int i = 0; i < occupied_cell_indices_vec_.size(); i++){
+    index = occupied_cell_indices_vec_[i];
+    voxel_radius = sqrt(pow(query_point_vec_[index].x, 2) + pow(query_point_vec_[index].y, 2));
+    if(voxel_radius < safety_radius_){
+      if(query_point_vec_[index].z > z_lower_threshold_){
+       close_obstacle_flag_ = true;
+      }
+    }
   }
 
 }

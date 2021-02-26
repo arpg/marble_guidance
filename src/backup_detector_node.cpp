@@ -20,10 +20,13 @@ int main(int argc, char** argv) {
         }
 
         if(backup_detector.haveOctomap()){
-          backup_detector.processOctomap();
+          if(backup_detector.transformQueryPoints(){
+            backup_detector.processOctomap();
+          }
         }
 
         backup_detector.publishBackupMsg();
+        backup_detector.puclishQueryPointsPcl();
         ros::spinOnce();
         loop_rate.sleep();
     }
