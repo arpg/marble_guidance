@@ -15,6 +15,9 @@ void backupDetector::init() {
   sub_imu_ = nh_.subscribe("imu", 1, &backupDetector::imuCb, this);
 
   pub_backup_ = nh_.advertise<std_msgs::Bool>("enable_backup", 1);
+  pub_query_point_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("query_points", 1);
+  pub_transformed_query_point_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("transformed_query_points", 1);
+  pub_occupied_points_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("occupied_points", 1);
 
   pnh_.param("total_scan_points", num_scan_points_, 100);
   pnh_.param("min_turnaround_distance", min_turnaround_distance_, 0.1);
@@ -25,10 +28,25 @@ void backupDetector::init() {
   pnh_.param("num_query_point_cols", num_query_point_cols_, 10);
   pnh_.param("num_query_point_layers", num_query_point_layers_, 10);
   pnh_.param("query_point_spacing", query_point_spacing_, .2);
+  pnh_.param("safety_radius", safety_radius_, .75);
+  pnh_.param("z_lower_threshold", z_lower_threshold_, .2);
+
+  pnh_.param("resolution", resolution_, 0.2);
+  pnh_.param("sensor_model/hit", probHit_, 0.7);
+  pnh_.param("sensor_model/miss", probMiss_, 0.4);
+  pnh_.param("sensor_model/min", thresMin_, 0.12);
+  pnh_.param("sensor_model/max", thresMax_, 0.97);
 
   pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
+  pnh_.param<std::string>("world_frame", world_frame_, "world");
+  pnh_.param<std::string>("base_link_frame", base_link_frame_, "base_link");
+  world_frame_ = "simple_cave_01";
+  base_link_frame_ = "X1/base_link";
+
+
 
   backup_msg_.data = false;
+  enable_debug_ = true;
   close_obstacle_flag_ = false;
   bad_attitude_flag_ = false;
   have_scan_ = false;
@@ -38,7 +56,14 @@ void backupDetector::init() {
   num_query_point_cols_ = 10;
   num_query_point_layers_ = 10;
   num_query_points_ = num_query_point_rows_*num_query_point_cols_*num_query_point_layers_;
-  query_point_spacing_ = .2;
+  query_point_spacing_ = resolution_;;
+
+  // Merged OcTree
+  occupancyTree_ = new octomap::OcTree(resolution_);
+  occupancyTree_->setProbHit(probHit_);
+  occupancyTree_->setProbMiss(probMiss_);
+  occupancyTree_->setClampingThresMin(thresMin_);
+  occupancyTree_->setClampingThresMax(thresMax_);
 
   // Initialize the laserscan vector
   laserscan_ranges_.resize(num_scan_points_);
@@ -67,7 +92,7 @@ void backupDetector::generateQueryPoints(){
 
 void backupDetector::publishQueryPointsPcl(){
   // Convert the vector of query points into a pointcloud
-  pcl::PointCloud<PointXYZ> query_point_pcl;
+  pcl::PointCloud<pcl::PointXYZ> query_point_pcl;
   pcl::PointXYZ pcl_point;
   for (int i = 0; i < num_query_points_; i++){
     pcl_point = {query_point_vec_[i].x, query_point_vec_[i].y, query_point_vec_[i].z};
@@ -76,10 +101,23 @@ void backupDetector::publishQueryPointsPcl(){
 
   sensor_msgs::PointCloud2 cloud_msg;
   pcl::toROSMsg(query_point_pcl, cloud_msg);
-  cloud_msg.header.frame_id = "X1/base_link";
+  cloud_msg.header.frame_id = base_link_frame_;
   cloud_msg.header.stamp = ros::Time::now();
 
   pub_query_point_pcl_.publish(cloud_msg);
+
+  pcl::PointCloud<pcl::PointXYZ> transformed_query_point_pcl;
+  int num_transformed_points = transformed_query_point_vec_.size();
+  for (int i = 0; i < num_transformed_points; i++){
+    pcl_point = {transformed_query_point_vec_[i].point.x, transformed_query_point_vec_[i].point.y, transformed_query_point_vec_[i].point.z};
+    transformed_query_point_pcl.push_back(pcl_point);
+  }
+
+  pcl::toROSMsg(transformed_query_point_pcl, cloud_msg);
+  cloud_msg.header.frame_id = world_frame_;
+  cloud_msg.header.stamp = ros::Time::now();
+
+  pub_transformed_query_point_pcl_.publish(cloud_msg);
 
 }
 
@@ -90,10 +128,10 @@ void backupDetector::laserscanCb(const sensor_msgs::LaserScanConstPtr& scan_msg)
   laserscan_ranges_ = scan_msg->ranges;
 }
 
-void octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
+void backupDetector::octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
 {
   if(!have_octomap_) have_octomap_ = true;
-  ROS_INFO("Occupancy octomap callback called");
+  //ROS_INFO("Occupancy octomap callback called");
   if (msg->data.size() == 0) return;
   delete occupancyTree_;
   occupancyTree_ = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(*msg);
@@ -125,30 +163,22 @@ void backupDetector::processLaserscan(){
 
 }
 
-bool backupDetector::transformQueryPoints(){
+void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped transform_stamped){
   // Transform the set of querypoints from the vehicle frame to the map frame
   geometry_msgs::PointStamped initial_pt;
   initial_pt.header.stamp = ros::Time::now();
-  geometry_msgs::TransformStamped transformStamped;
-  try{
-    transform_stamped = tf_buffer.lookupTransform("/X1/base_link", "/X1/map", ros::Time(0));
-    geometry_msgs::PointStamped transformed_pt;
-    transformed_pt.header.stamp = ros::Time::now();
-    transformed_query_point_vec_.clear();
-    for(int i= 0; i < num_query_points_; i++){
-      initial_pt.point.x = query_point_vec_[i].x;
-      initial_pt.point.y = query_point_vec_[i].y;
-      initial_pt.point.z = query_point_vec_[i].z;
-      tf2_geometry_msgs::do_transform(initial_pt, transformed_pt, transform_stamped);
-      transformed_query_point_vec_.push_back(transformed_pt);
-    }
-
+  initial_pt.header.frame_id = base_link_frame_;
+  geometry_msgs::PointStamped transformed_pt;
+  transformed_pt.header.stamp = ros::Time::now();
+  transformed_query_point_vec_.clear();
+  for(int i= 0; i < num_query_points_; i++){
+    initial_pt.point.x = query_point_vec_[i].x;
+    initial_pt.point.y = query_point_vec_[i].y;
+    initial_pt.point.z = query_point_vec_[i].z;
+    tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
+    transformed_query_point_vec_.push_back(transformed_pt);
   }
-  catch (tf2::TransformException &ex) {
-    ROS_WARN("%s",ex.what());
-    ros::Duration(1.0).sleep();
-    continue;
-}
+
 }
 
 void backupDetector::processOctomap(){
@@ -160,7 +190,7 @@ void backupDetector::processOctomap(){
   // These should be the centers of voxels in question
   // Convert the query coordinates in the map frame to
   // voxel keys in the map frame.
-  geomtry_msgs::Point qp;
+  geometry_msgs::Point qp;
   for(int i = 0; i < num_query_points_; i++){
     qp = transformed_query_point_vec_[i].point;
     coord_key_vec_.push_back(occupancyTree_->coordToKey(qp.x, qp.y, qp.z));
@@ -169,8 +199,8 @@ void backupDetector::processOctomap(){
   // Check each keyed voxel for occupancy
   occupied_cell_indices_vec_.clear();
   for(int i = 0; i < num_query_points_; i++){
-    OcTreeNodeStamped* current_node = occupancyTree_->search(coord_key_vec_[i]);
-    if(current_node && current_node->getLogOdds() > 0){
+    octomap::OcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
+    if(current_node && current_node->getLogOdds() >= .5){
       // Cell is occupied, need to track the index
       occupied_cell_indices_vec_.push_back(i);
     }
@@ -179,8 +209,9 @@ void backupDetector::processOctomap(){
   // Check all occupied cells to see if they exist
   // within some predefined safety radius around the vehicle
   // Also have a height check for tuning voxels near the wheels
-  float radius;
+  float voxel_radius;
   close_obstacle_flag_ = false;
+  int index;
   for (int i = 0; i < occupied_cell_indices_vec_.size(); i++){
     index = occupied_cell_indices_vec_[i];
     voxel_radius = sqrt(pow(query_point_vec_[index].x, 2) + pow(query_point_vec_[index].y, 2));
@@ -189,6 +220,23 @@ void backupDetector::processOctomap(){
        close_obstacle_flag_ = true;
       }
     }
+  }
+
+  if (enable_debug_){
+    pcl::PointCloud<pcl::PointXYZ> point_pcl;
+    pcl::PointXYZ pcl_point;
+    for (int i = 0; i < occupied_cell_indices_vec_.size(); i++){
+      index = occupied_cell_indices_vec_[i];
+      pcl_point = {transformed_query_point_vec_[index].point.x, transformed_query_point_vec_[index].point.y, transformed_query_point_vec_[index].point.z};
+      point_pcl.push_back(pcl_point);
+    }
+
+    sensor_msgs::PointCloud2 cloud_msg;
+    pcl::toROSMsg(point_pcl, cloud_msg);
+    cloud_msg.header.frame_id = world_frame_;
+    cloud_msg.header.stamp = ros::Time::now();
+
+    pub_occupied_points_pcl_.publish(cloud_msg);
   }
 
 }

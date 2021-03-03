@@ -15,11 +15,18 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   tf
+  tf2_ros
+  tf2_geometry_msgs
+  pcl_conversions
+  pcl_ros
+  octomap_ros
+  octomap_msgs
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+find_package(octomap REQUIRED)
 
 
 
@@ -28,10 +35,10 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 
 catkin_package(
-#  INCLUDE_DIRS include
+#   INCLUDE_DIRS include   ${OCTOMAP_INCLUDE_DIRS}
 #  LIBRARIES marble_guidance
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros
-#  DEPENDS system_lib
+#   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros pcl_ros
+   DEPENDS OCTOMAP
 )
 
 ###########
@@ -43,6 +50,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${OCTOMAP_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library

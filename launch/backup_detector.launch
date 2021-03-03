@@ -7,12 +7,20 @@
   <node name="backup_detector" type= "backup_detector_node" pkg="marble_guidance" output="screen">
 
     <remap from="backup_detector/laserscan"         to="octomap_laserscan"/>
-    <remap from="backup_detector/octomap"           to="octomap"/>
+    <remap from="backup_detector/octomap"           to="X1/merged_map"/>
     <remap from="backup_detector/imu"               to="imu/data"/>
 
     <param name="total_scan_points"                 value="100"/>
     <param name="min_turnaround_distance"           value="0.1"/>
     <param name="pitch_limit"                       value="20.0"/>
+
+    <param name="safety_radius"              value="2.0"/>
+
+    <param name="resolution"          value=".15"/>
+    <param name="sensor_model/hit"    value=".7"/>
+    <param name="sensor_model/miss"          value=".4"/>
+    <param name="sensor_model/min"          value=".12"/>
+    <param name="sensor_model/max"          value=".98"/>
 
   </node>
 

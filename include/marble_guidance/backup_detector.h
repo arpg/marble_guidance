@@ -15,13 +15,21 @@
 #include <sensor_msgs/Imu.h>
 
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/TransformStamped.h>
 
+#include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf/tf.h>
 
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
 // Octomap libaries
 #include <octomap/octomap.h>
+#include <octomap/OcTreeStamped.h>
+#include <octomap/OcTreeKey.h>
 #include <octomap/ColorOcTree.h>
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/conversions.h>
@@ -40,34 +48,51 @@ class backupDetector{
     void init();
     bool haveScan();
     bool haveIMU();
+    bool haveOctomap();
     void processLaserscan();
     void processIMU();
+    void processOctomap();
     void publishBackupMsg();
     void publishQueryPointsPcl();
+    void generateQueryPoints();
+    void transformQueryPoints(const geometry_msgs::TransformStamped tranform_stamped);
+
 
   private:
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
-    ros::NodeHandle priv_nh;
     std::string node_name_{"node_name"};
 
     // Subsribers
     ros::Subscriber sub_laserscan_;
+    ros::Subscriber sub_octomap_;
+    ros::Subscriber sub_imu_;
 
     // Publishers
     ros::Publisher pub_backup_;
     ros::Publisher pub_query_point_pcl_;
+    ros::Publisher pub_transformed_query_point_pcl_;
+    ros::Publisher pub_occupied_points_pcl_;
 
     // Functions
     void laserscanCb(const sensor_msgs::LaserScanConstPtr& scan_msg);
+    void octomapCb(const octomap_msgs::Octomap::ConstPtr msg);
     void imuCb(const sensor_msgs::ImuConstPtr& imu_msg);
 
+
     bool have_scan_;
+    bool have_octomap_;
     bool have_imu_;
+    bool enable_debug_;
 
     std::string vehicle_name_;
+    std::string world_frame_;
+    std::string base_link_frame_;
 
     std_msgs::Bool backup_msg_;
+
+    double safety_radius_;
+    double z_lower_threshold_;
 
     // Query point parameters
     int num_query_point_rows_;
@@ -76,11 +101,7 @@ class backupDetector{
     double query_point_spacing_;
     double num_query_points_;
     vector <geometry_msgs::Point> query_point_vec_;
-    vector <geomtry_msgs::PointStamped> transformed_query_point_vec_;
-
-    // Transform buffer
-    tf2_ros::Buffer tf_buffer_;
-    tf2_ros::TransformListener tf_listener_(tf_buffer_);
+    vector <geometry_msgs::PointStamped> transformed_query_point_vec_;
 
     int num_scan_points_;
     double min_turnaround_distance_;
@@ -97,8 +118,12 @@ class backupDetector{
     // Octomap
     octomap::OcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
     vector<octomap::OcTreeKey> coord_key_vec_;
-    bool have_octomap_;
     vector<int> occupied_cell_indices_vec_;
+    double probHit_;
+    double probMiss_;
+    double thresMin_;
+    double thresMax_;
+    double resolution_;
 
 };
 
