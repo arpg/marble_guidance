@@ -21,12 +21,13 @@ int main(int argc, char** argv) {
         // Check for a new tf
 
         try {
-          transform_stamped = tf_buffer.lookupTransform("simple_cave_01", "X1/base_link", ros::Time(0));
+          transform_stamped = tf_buffer.lookupTransform("world", "X1/base_link", ros::Time(0));
         } catch (tf2::TransformException &ex) {
           ROS_WARN("%s",ex.what());
           ros::Duration(1.0).sleep();
           continue;
         }
+        ROS_INFO_THROTTLE(1.0,"transform_x: %f", transform_stamped.transform.translation.x)
 
         // if(backup_detector.haveScan()){
         //   backup_detector.processLaserscan();
