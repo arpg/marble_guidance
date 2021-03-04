@@ -31,16 +31,12 @@ void backupDetector::init() {
   pnh_.param("safety_radius", safety_radius_, .75);
   pnh_.param("z_lower_threshold", z_lower_threshold_, .2);
 
-  pnh_.param("resolution", resolution_, 0.2);
-  pnh_.param("sensor_model/hit", probHit_, 0.7);
-  pnh_.param("sensor_model/miss", probMiss_, 0.4);
-  pnh_.param("sensor_model/min", thresMin_, 0.12);
-  pnh_.param("sensor_model/max", thresMax_, 0.97);
+  pnh_.param("resolution", resolution_, 0.15);
 
   pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
   pnh_.param<std::string>("world_frame", world_frame_, "world");
   pnh_.param<std::string>("base_link_frame", base_link_frame_, "base_link");
-  world_frame_ = "world";
+  world_frame_ = "simple_cave_01";
   base_link_frame_ = "X1/base_link";
 
 
@@ -56,14 +52,10 @@ void backupDetector::init() {
   num_query_point_cols_ = 10;
   num_query_point_layers_ = 10;
   num_query_points_ = num_query_point_rows_*num_query_point_cols_*num_query_point_layers_;
-  query_point_spacing_ = resolution_;
+  query_point_spacing_ = resolution_;;
 
   // Merged OcTree
   occupancyTree_ = new octomap::OcTree(resolution_);
-  // occupancyTree_->setProbHit(probHit_);
-  // occupancyTree_->setProbMiss(probMiss_);
-  // occupancyTree_->setClampingThresMin(thresMin_);
-  // occupancyTree_->setClampingThresMax(thresMax_);
 
   // Initialize the laserscan vector
   laserscan_ranges_.resize(num_scan_points_);
@@ -114,7 +106,8 @@ void backupDetector::publishQueryPointsPcl(){
   }
 
   pcl::toROSMsg(transformed_query_point_pcl, cloud_msg);
-   cloud_msg.header.stamp = ros::Time::now();
+  cloud_msg.header.frame_id = world_frame_;
+  cloud_msg.header.stamp = ros::Time::now();
 
   pub_transformed_query_point_pcl_.publish(cloud_msg);
 
@@ -171,7 +164,9 @@ void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped 
   transformed_pt.header.stamp = ros::Time::now();
   transformed_query_point_vec_.clear();
   for(int i= 0; i < num_query_points_; i++){
-    initial_pt.point = query_point_vec_[i];
+    initial_pt.point.x = query_point_vec_[i].x;
+    initial_pt.point.y = query_point_vec_[i].y;
+    initial_pt.point.z = query_point_vec_[i].z;
     tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
     transformed_query_point_vec_.push_back(transformed_pt);
   }
@@ -194,11 +189,10 @@ void backupDetector::processOctomap(){
   }
 
   // Check each keyed voxel for occupancy
-  // occupied_cell_indices_vec_.clear();
-  vector<int> occupied_cell_indices_vec_;
+  occupied_cell_indices_vec_.clear();
   for(int i = 0; i < num_query_points_; i++){
     octomap::OcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
-    if(current_node && current_node->getLogOdds() >= 0){
+    if(current_node && current_node->getLogOdds() >= .5){
       // Cell is occupied, need to track the index
       occupied_cell_indices_vec_.push_back(i);
     }

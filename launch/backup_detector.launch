@@ -15,12 +15,7 @@
     <param name="pitch_limit"                       value="20.0"/>
 
     <param name="safety_radius"              value="2.0"/>
-
     <param name="resolution"          value=".15"/>
-    <param name="sensor_model/hit"    value=".7"/>
-    <param name="sensor_model/miss"          value=".4"/>
-    <param name="sensor_model/min"          value=".12"/>
-    <param name="sensor_model/max"          value=".98"/>
 
   </node>
 

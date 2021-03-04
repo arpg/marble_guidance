@@ -27,7 +27,6 @@ int main(int argc, char** argv) {
           ros::Duration(1.0).sleep();
           continue;
         }
-        ROS_INFO_THROTTLE(1.0,"transform_x: %f", transform_stamped.transform.translation.x)
 
         // if(backup_detector.haveScan()){
         //   backup_detector.processLaserscan();
