@@ -46,16 +46,15 @@ class backupDetector{
 
     // Functions
     void init();
-    bool haveScan();
     bool haveIMU();
     bool haveOctomap();
-    void processLaserscan();
     void processIMU();
     void processOctomap();
     void publishBackupMsg();
     void publishQueryPointsPcl();
     void generateQueryPoints();
     void transformQueryPoints(const geometry_msgs::TransformStamped tranform_stamped);
+    vector<string> getFrames();
 
 
   private:
@@ -64,7 +63,6 @@ class backupDetector{
     std::string node_name_{"node_name"};
 
     // Subsribers
-    ros::Subscriber sub_laserscan_;
     ros::Subscriber sub_octomap_;
     ros::Subscriber sub_imu_;
 
@@ -73,20 +71,19 @@ class backupDetector{
     ros::Publisher pub_query_point_pcl_;
     ros::Publisher pub_transformed_query_point_pcl_;
     ros::Publisher pub_occupied_points_pcl_;
+    ros::Publisher pub_close_points_pcl_;
 
     // Functions
-    void laserscanCb(const sensor_msgs::LaserScanConstPtr& scan_msg);
     void octomapCb(const octomap_msgs::Octomap::ConstPtr msg);
     void imuCb(const sensor_msgs::ImuConstPtr& imu_msg);
 
 
-    bool have_scan_;
     bool have_octomap_;
     bool have_imu_;
     bool enable_debug_;
 
     std::string vehicle_name_;
-    std::string world_frame_;
+    std::string map_frame_;
     std::string base_link_frame_;
 
     std_msgs::Bool backup_msg_;
@@ -103,9 +100,6 @@ class backupDetector{
     vector <geometry_msgs::Point> query_point_vec_;
     vector <geometry_msgs::PointStamped> transformed_query_point_vec_;
 
-    int num_scan_points_;
-    double min_turnaround_distance_;
-    vector<float> laserscan_ranges_;
     bool close_obstacle_flag_;
 
     // imuCb
@@ -119,6 +113,7 @@ class backupDetector{
     octomap::OcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
     vector<octomap::OcTreeKey> coord_key_vec_;
     vector<int> occupied_cell_indices_vec_;
+    vector<int> close_cell_indices_vec_;
 
     double resolution_;
 
