@@ -36,7 +36,7 @@ void backupDetector::init() {
   pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
   pnh_.param<std::string>("world_frame", world_frame_, "world");
   pnh_.param<std::string>("base_link_frame", base_link_frame_, "base_link");
-  world_frame_ = "simple_cave_01";
+  world_frame_ = "world";
   base_link_frame_ = "X1/base_link";
 
 
@@ -52,7 +52,7 @@ void backupDetector::init() {
   num_query_point_cols_ = 10;
   num_query_point_layers_ = 10;
   num_query_points_ = num_query_point_rows_*num_query_point_cols_*num_query_point_layers_;
-  query_point_spacing_ = resolution_;;
+  query_point_spacing_ = resolution_;
 
   // Merged OcTree
   occupancyTree_ = new octomap::OcTree(resolution_);
@@ -164,9 +164,7 @@ void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped 
   transformed_pt.header.stamp = ros::Time::now();
   transformed_query_point_vec_.clear();
   for(int i= 0; i < num_query_points_; i++){
-    initial_pt.point.x = query_point_vec_[i].x;
-    initial_pt.point.y = query_point_vec_[i].y;
-    initial_pt.point.z = query_point_vec_[i].z;
+    initial_pt.point = query_point_vec_[i];
     tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
     transformed_query_point_vec_.push_back(transformed_pt);
   }
@@ -183,6 +181,7 @@ void backupDetector::processOctomap(){
   // Convert the query coordinates in the map frame to
   // voxel keys in the map frame.
   geometry_msgs::Point qp;
+  coord_key_vec_.clear();
   for(int i = 0; i < num_query_points_; i++){
     qp = transformed_query_point_vec_[i].point;
     coord_key_vec_.push_back(occupancyTree_->coordToKey(qp.x, qp.y, qp.z));
@@ -190,9 +189,10 @@ void backupDetector::processOctomap(){
 
   // Check each keyed voxel for occupancy
   occupied_cell_indices_vec_.clear();
+  //vector<int> occupied_cell_indices_vec_;
   for(int i = 0; i < num_query_points_; i++){
     octomap::OcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
-    if(current_node && current_node->getLogOdds() >= .5){
+    if(current_node && current_node->getLogOdds() >= 0.0){
       // Cell is occupied, need to track the index
       occupied_cell_indices_vec_.push_back(i);
     }

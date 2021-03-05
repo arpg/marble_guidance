@@ -118,11 +118,8 @@ class backupDetector{
     // Octomap
     octomap::OcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
     vector<octomap::OcTreeKey> coord_key_vec_;
-    //vector<int> occupied_cell_indices_vec_;
-    double probHit_;
-    double probMiss_;
-    double thresMin_;
-    double thresMax_;
+    vector<int> occupied_cell_indices_vec_;
+
     double resolution_;
 
 };

@@ -28,6 +28,7 @@ int main(int argc, char** argv) {
           continue;
         }
 
+        ROS_INFO_THROTTLE(1.0,"transform x: %f", transform_stamped.transform.translation.x);
         // if(backup_detector.haveScan()){
         //   backup_detector.processLaserscan();
         // }
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
         //
 
         if(backup_detector.haveOctomap()){
+          ROS_INFO_THROTTLE(1.0,"Processing octomap...");
           backup_detector.transformQueryPoints(transform_stamped);
           backup_detector.processOctomap();
         }
