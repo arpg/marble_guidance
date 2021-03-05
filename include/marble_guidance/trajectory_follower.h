@@ -20,7 +20,6 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <nearness_control_msgs/TrajList.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -29,6 +28,9 @@
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <lcd_pkg/PoseGraph.h>
+#include <marble_guidance/MotionCmd.h>
+#include <marble_guidance/TrajList.h>
+
 #include <tf/tf.h>
 #include <math.h>
 
@@ -46,15 +48,20 @@ class trajectoryFollower {
     // FUNCTIONS //
     void cartoTrajCb(const lcd_pkg::PoseGraphConstPtr& msg);
     void liosamTrajCb(const nav_msgs::PathConstPtr& msg);
-    void gtTrajCb(const nearness_control_msgs::TrajListConstPtr& msg);
+    void gtTrajCb(const marble_guidance::TrajListConstPtr& msg);
     void odomCb(const nav_msgs::OdometryConstPtr& odom_msg);
     void findNextLookahead();
     void findNextGTLookahead();
     void publishLookahead();
-    void taskCb(const std_msgs::String task_msg);
+    void publishMotionCmd();
     void followTrajCb(const std_msgs::BoolConstPtr& follow_traj_msg);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
     bool doLookup();
+    int getLoopRate();
+    bool getGroundTruth();
+    void computeCmdVel();
+    float wrapAngle(float angle);
+    float sat(float num, float min_val, float max_val);
 
  private:
     // public ros node handle
@@ -74,6 +81,8 @@ class trajectoryFollower {
 
     // PUBLISHERS //
     ros::Publisher pub_lookahead_;
+    ros::Publisher pub_traj_motion_cmd_;
+    ros::Publisher pub_cmd_vel_;
 
     nav_msgs::Odometry odom_;
     geometry_msgs::Point odom_point_;
@@ -81,6 +90,9 @@ class trajectoryFollower {
 
     vector<geometry_msgs::Point> traj_list_points_;
 
+    int loop_rate_;
+    bool have_odom_;
+    bool have_traj_;
 
     ros::Time last_joy_msg_time_;
 
@@ -97,6 +109,24 @@ class trajectoryFollower {
     int last_gt_lookahead_index_;
     bool have_current_gt_traj_home_;
     vector<geometry_msgs::Point> gt_traj_list_points_;
+
+    double current_roll_;
+    double current_pitch_;
+    double current_heading_;
+
+    double turn_in_place_thresh_;
+    double turn_in_place_yawrate_;
+    double lookahead_dist_thresh_;
+    double yawrate_k0_;
+    double yawrate_kd_;
+    double yawrate_max_;
+    double u_cmd_max_;
+    float yawrate_cmd_;
+    float u_cmd_;
+
+    bool turn_in_place_;
+    marble_guidance::MotionCmd traj_motion_cmd_;
+    geometry_msgs::Twist cmd_vel_msg_;
 
 
 

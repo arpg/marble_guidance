@@ -1,0 +1,3 @@
+int16 motion_type
+geometry_msgs/Twist cmd_vel
+geometry_msgs/Point lookahead_point

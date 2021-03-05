@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
         if(path_follower.ready()){
           //ROS_INFO_THROTTLE(1,"Running...");
           path_follower.computeControlCommands();
-          path_follower.publishCmdMsg();
+          path_follower.publishMotionCmd();
         }
         ros::spinOnce();
         loop_rate.sleep();

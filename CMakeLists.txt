@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   octomap_ros
   octomap_msgs
+  lcd_pkg
 )
 
 ## System dependencies are found with CMake's conventions
@@ -28,7 +29,19 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(octomap REQUIRED)
 
+add_message_files(
+   FILES
+   MotionCmd.msg
+   TrajList.msg
+   )
 
+ ## Generate added messages and services with any dependencies listed here
+ generate_messages(
+    DEPENDENCIES
+    sensor_msgs
+    geometry_msgs
+    std_msgs
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -60,6 +73,12 @@ target_link_libraries(path_follower ${catkin_LIBRARIES} )
 
 add_executable(path_follower_node src/path_follower_node.cpp)
 target_link_libraries(path_follower_node path_follower ${catkin_LIBRARIES})
+
+add_library(trajectory_follower_node src/trajectory_follower_node.cpp)
+target_link_libraries(trajectory_follower_node ${catkin_LIBRARIES} )
+
+add_executable(trajectory_follower src/trajectory_follower.cpp)
+target_link_libraries(trajectory_follower trajectory_follower_node ${catkin_LIBRARIES})
 
 add_library(backup_detector src/backup_detector.cpp)
 #add_dependencies(backup_detector ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_generate_messages_cpp)

@@ -15,6 +15,15 @@
         <param name="vehicle_name" value="$(arg vehicle_name)"/>
         <param name="enable_ground_truth" value="$(arg enable_ground_truth)"/>
 
+        <param name="loop_rate"                       value="20.0"/>
+        <param name="yawrate_k0"                      value="1.0"/>
+        <param name="yawrate_kd"                      value="1.0"/>
+        <param name="max_yawrate"                     value="0.5"/>
+        <param name="max_forward_speed"               value="1.0"/>
+        <param name="turn_in_place_thresh"            value="1.0"/>
+        <param name="turn_in_place_yawrate"           value="0.25"/>
+        <param name="lookahead_distance_threshold"    value="1.0"/>
+
     </node>
 
     <node pkg="nearness_control" type="trajectory_generator" name="trajectory_generator_node" if="$(arg enable_ground_truth)">

@@ -19,6 +19,7 @@
 #include <sensor_msgs/Range.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
+#include <marble_guidance/MotionCmd.h>
 #include <tf/tf.h>
 #include <tf2/LinearMath/Quaternion.h>
 
@@ -38,7 +39,7 @@ class pathFollower{
     void odomCb(const nav_msgs::OdometryConstPtr& odom_msg);
     void backupCb(const std_msgs::Bool bool_msg);
     void computeControlCommands();
-    void publishCmdMsg();
+    void publishMotionCmd();
     void findLookahead(nav_msgs::Path path);
     float distanceTwoPoints3D(geometry_msgs::Point p1, geometry_msgs::Point p2);
     float wrapAngle(float angle);
@@ -57,8 +58,9 @@ class pathFollower{
     ros::Subscriber sub_backup_;
 
     // Publishers
-    ros::Publisher pub_cmd_;
+    ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_lookahead_point_;
+    ros::Publisher pub_motion_cmd_;
 
     // Variables
     string vehicle_name_;
@@ -89,11 +91,12 @@ class pathFollower{
     double turn_in_place_thresh_;
     double turn_in_place_yawrate_;
     bool turn_in_place_;
-    geometry_msgs::Twist control_commands_msg_;
+    geometry_msgs::Twist cmd_vel_msg_;
     float u_cmd_;
     double u_cmd_max_;
 
     bool enable_backup_;
+    marble_guidance::MotionCmd path_motion_cmd_msg_;
 
 
 };

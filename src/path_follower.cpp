@@ -13,8 +13,9 @@ void pathFollower::init() {
     sub_path_ = nh_.subscribe("path", 1, &pathFollower::pathCb, this);
     sub_odom_ = nh_.subscribe("odometry", 1, &pathFollower::odomCb, this);
     sub_backup_ = nh_.subscribe("enable_backup", 1, &pathFollower::backupCb, this);
-    pub_cmd_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_lookahead_point_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead_point", 10);
+    pub_motion_cmd_ = nh_.advertise<marble_guidance::MotionCmd>("motion_cmd", 10);
 
     pnh_.param("turn_in_place_thresh", turn_in_place_thresh_, 1.0);
     pnh_.param("turn_in_place_yawrate", turn_in_place_yawrate_, 1.0);
@@ -82,11 +83,10 @@ void pathFollower::findLookahead(nav_msgs::Path path){
     }
   }
 
-  if(debug_ || 1){
-    lookahead_point_msg_.header.stamp = ros::Time::now();
-    lookahead_point_msg_.point = lookahead_pose_.position;
-    pub_lookahead_point_.publish(lookahead_point_msg_);
-  }
+  // Publish the lookahead
+  lookahead_point_msg_.header.stamp = ros::Time::now();
+  lookahead_point_msg_.point = lookahead_pose_.position;
+  pub_lookahead_point_.publish(lookahead_point_msg_);
 
 }
 
@@ -124,11 +124,17 @@ void pathFollower::computeControlCommands(){
 
 }
 
-void pathFollower::publishCmdMsg(){
+void pathFollower::publishMotionCmd(){
 
-  control_commands_msg_.linear.x = u_cmd_;
-  control_commands_msg_.angular.z = yawrate_cmd_;
-  pub_cmd_.publish(control_commands_msg_);
+  cmd_vel_msg_.linear.x = u_cmd_;
+  cmd_vel_msg_.angular.z = yawrate_cmd_;
+  pub_cmd_vel_.publish(cmd_vel_msg_);
+
+  path_motion_cmd_msg_.cmd_vel = cmd_vel_msg_;
+  path_motion_cmd_msg_.motion_type = turn_in_place_;
+  path_motion_cmd_msg_.lookahead_point = lookahead_pose_.position;
+
+  pub_motion_cmd_.publish(path_motion_cmd_msg_);
 
 }
 
@@ -183,7 +189,6 @@ float pathFollower::wrapAngle(float angle){
     return angle;
 
 }
-
 
 float pathFollower::sat(float num, float min_val, float max_val){
 
