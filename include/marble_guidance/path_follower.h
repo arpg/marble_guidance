@@ -36,6 +36,7 @@ class pathFollower{
     void init();
     void pathCb(const nav_msgs::PathConstPtr& path_msg);
     void odomCb(const nav_msgs::OdometryConstPtr& odom_msg);
+    void backupCb(const std_msgs::Bool bool_msg);
     void computeControlCommands();
     void publishCmdMsg();
     void findLookahead(nav_msgs::Path path);
@@ -53,13 +54,16 @@ class pathFollower{
     // Subsribers
     ros::Subscriber sub_path_;
     ros::Subscriber sub_odom_;
+    ros::Subscriber sub_backup_;
 
     // Publishers
     ros::Publisher pub_cmd_;
     ros::Publisher pub_lookahead_pose_;
 
     // Variables
+    string vehicle_name_;
     string vehicle_frame_;
+
     bool debug_;
 
     nav_msgs::Path current_path_;
@@ -88,6 +92,8 @@ class pathFollower{
     geometry_msgs::TwistStamped control_commands_msg_;
     float u_cmd_;
     double u_cmd_max_;
+
+    bool enable_backup_;
 
 
 };

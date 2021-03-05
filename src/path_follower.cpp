@@ -12,6 +12,7 @@ void pathFollower::init() {
 
     sub_path_ = nh_.subscribe("path", 1, &pathFollower::pathCb, this);
     sub_odom_ = nh_.subscribe("odometry", 1, &pathFollower::odomCb, this);
+    sub_backup_ = nh_.subscribe("enable_backup", 1, &pathFollower::backupCb, this);
     pub_cmd_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_lookahead_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("lookahead_pose", 10);
 
@@ -23,13 +24,15 @@ void pathFollower::init() {
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
     pnh_.param("enable_debug", debug_, false);
-    //pnh_.param("", , 1.0);
-    pnh_.param<std::string>("vehicle_frame", vehicle_frame_, "X1");
 
-    control_commands_msg_.header.frame_id = vehicle_frame_.c_str();
-    lookahead_pose_msg_.header.frame_id = "X1/map";
+    pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
+    vehicle_frame_ = vehicle_name_ + "/base_link";
+
+    control_commands_msg_.header.frame_id = vehicle_frame_;
+    lookahead_pose_msg_.header.frame_id = vehicle_name_ + "/map";
     have_path_ = false;
     have_odom_ = false;
+    enable_backup_ = false;
 
 }
 
@@ -148,6 +151,10 @@ void pathFollower::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
 
   //ROS_INFO_THROTTLE(1, "Current Odom - X: %f, Y: %f, Z, %f, Heading: %f", current_pos_.x, current_pos_.y, current_pos_.z, current_heading_);
 
+}
+
+void pathFollower::backupCb(const std_msgs::Bool bool_msg){
+  enable_backup_ = bool_msg.data;
 }
 
 bool pathFollower::ready(){
