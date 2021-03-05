@@ -45,7 +45,7 @@ class guidance_controller:
 				print("point [%0.1f, %0.1f, %0.1f], entry %d in path of length %d, contained NaNs" % (newpath[0,i], newpath[1,i], newpath[2,i], i, len(data.poses)))
 				return
 		self.path = newpath
-		print('path received of size: %d' % self.path.shape[1])
+		#print('path received of size: %d' % self.path.shape[1])
 		self.pathUpdated = 1
 		return
 
