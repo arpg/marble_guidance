@@ -8,9 +8,9 @@
 
   <node name="backup_detector" type= "backup_detector_node" pkg="marble_guidance" output="screen">
 
-    <remap from="backup_detector/laserscan"         to="octomap_laserscan"/>
-    <remap from="backup_detector/octomap"           to="X1/merged_map"/>
-    <remap from="backup_detector/imu"               to="X1/imu/data"/>
+    <remap from="backup_detector/octomap"       to="merged_map"/>
+    <remap from="backup_detector/imu"           to="imu/data"/>
+    <remap from="backup_detector/enable_backup" to="enable_backup"/>
 
     <param name="vehicle_name"                      value="$(arg vehicle_name)"/>
     <param name="map_frame"                         value="$(arg map_frame)"/>

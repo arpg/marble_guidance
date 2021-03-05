@@ -14,7 +14,7 @@ void pathFollower::init() {
     sub_odom_ = nh_.subscribe("odometry", 1, &pathFollower::odomCb, this);
     sub_backup_ = nh_.subscribe("enable_backup", 1, &pathFollower::backupCb, this);
     pub_cmd_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
-    pub_lookahead_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("lookahead_pose", 10);
+    pub_lookahead_point_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead_point", 10);
 
     pnh_.param("turn_in_place_thresh", turn_in_place_thresh_, 1.0);
     pnh_.param("turn_in_place_yawrate", turn_in_place_yawrate_, 1.0);
@@ -28,8 +28,8 @@ void pathFollower::init() {
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
 
-    control_commands_msg_.header.frame_id = vehicle_frame_;
-    lookahead_pose_msg_.header.frame_id = vehicle_name_ + "/map";
+    // control_commands_msg_.header.frame_id = vehicle_frame_;
+    lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
@@ -41,6 +41,8 @@ void pathFollower::findLookahead(nav_msgs::Path path){
   // Find the lookahead point on the current path
   vector<geometry_msgs::PoseStamped> poses = path.poses;
   int l = poses.size();
+
+  if(!l) return;
 
   float dist;
   vector<float> dist_vec;
@@ -80,10 +82,10 @@ void pathFollower::findLookahead(nav_msgs::Path path){
     }
   }
 
-  if(debug_){
-    lookahead_pose_msg_.header.stamp = ros::Time::now();
-    lookahead_pose_msg_.pose = lookahead_pose_;
-    pub_lookahead_pose_.publish(lookahead_pose_msg_);
+  if(debug_ || 1){
+    lookahead_point_msg_.header.stamp = ros::Time::now();
+    lookahead_point_msg_.point = lookahead_pose_.position;
+    pub_lookahead_point_.publish(lookahead_point_msg_);
   }
 
 }
@@ -118,15 +120,14 @@ void pathFollower::computeControlCommands(){
     u_cmd_ = 0.0;
   }
 
-  ROS_INFO_THROTTLE(1,"Yawrate cmd: %f, Forward Speed cmd: %f", yawrate_cmd_, u_cmd_);
+ //  ROS_INFO_THROTTLE(1,"Yawrate cmd: %f, Forward Speed cmd: %f", yawrate_cmd_, u_cmd_);
 
 }
 
 void pathFollower::publishCmdMsg(){
 
-  control_commands_msg_.header.stamp = ros::Time::now();
-  control_commands_msg_.twist.linear.x = u_cmd_;
-  control_commands_msg_.twist.angular.z = yawrate_cmd_;
+  control_commands_msg_.linear.x = u_cmd_;
+  control_commands_msg_.angular.z = yawrate_cmd_;
   pub_cmd_.publish(control_commands_msg_);
 
 }

@@ -217,7 +217,7 @@ void backupDetector::processIMU(){
   // Check to see if the vehicle is pitched past the limit.
   // If so, we need to backup instead of turning around to prevent
   // the vehicle from slipping sideways in sim.
-  ROS_INFO_THROTTLE(.5,"pitch: %f", pitch_);
+  //ROS_INFO_THROTTLE(.5,"pitch: %f", pitch_);
   if(abs(pitch_) > pitch_limit_){
     bad_attitude_flag_ = true;
   } else {

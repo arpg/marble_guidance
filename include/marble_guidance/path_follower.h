@@ -58,7 +58,7 @@ class pathFollower{
 
     // Publishers
     ros::Publisher pub_cmd_;
-    ros::Publisher pub_lookahead_pose_;
+    ros::Publisher pub_lookahead_point_;
 
     // Variables
     string vehicle_name_;
@@ -74,7 +74,7 @@ class pathFollower{
     geometry_msgs::Pose lookahead_pose_;
     float lookahead_dist_;
     double lookahead_dist_thresh_;
-    geometry_msgs::PoseStamped lookahead_pose_msg_;
+    geometry_msgs::PointStamped lookahead_point_msg_;
 
     nav_msgs::Odometry current_odom_;
     geometry_msgs::Point current_pos_;
@@ -89,7 +89,7 @@ class pathFollower{
     double turn_in_place_thresh_;
     double turn_in_place_yawrate_;
     bool turn_in_place_;
-    geometry_msgs::TwistStamped control_commands_msg_;
+    geometry_msgs::Twist control_commands_msg_;
     float u_cmd_;
     double u_cmd_max_;
 
