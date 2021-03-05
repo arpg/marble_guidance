@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     backup_detector::backupDetector backup_detector(nh, nh_private);
 
     backup_detector.generateQueryPoints();
+    vector<string> frames = backup_detector.getFrames();
 
     // Transform buffer
     tf2_ros::Buffer tf_buffer;
@@ -18,33 +19,29 @@ int main(int argc, char** argv) {
     ros::Rate loop_rate(10);
 
     while(ros::ok()){
-        // Check for a new tf
 
+        // Check for a new tf
         try {
-          transform_stamped = tf_buffer.lookupTransform("world", "X1/base_link", ros::Time(0));
+          transform_stamped = tf_buffer.lookupTransform(frames[0], frames[1], ros::Time(0));
         } catch (tf2::TransformException &ex) {
           ROS_WARN("%s",ex.what());
           ros::Duration(1.0).sleep();
           continue;
         }
 
-        ROS_INFO_THROTTLE(1.0,"transform x: %f", transform_stamped.transform.translation.x);
-        // if(backup_detector.haveScan()){
-        //   backup_detector.processLaserscan();
-        // }
-        //
-        // if(backup_detector.haveIMU()){
-        //   backup_detector.processIMU();
-        // }
-        //
+        // Check if our attitude is outside of the safety bounds
+        if(backup_detector.haveIMU()){
+          backup_detector.processIMU();
+        }
 
+        // Check if we are clear of obstacles
         if(backup_detector.haveOctomap()){
-          ROS_INFO_THROTTLE(1.0,"Processing octomap...");
           backup_detector.transformQueryPoints(transform_stamped);
           backup_detector.processOctomap();
         }
 
-        // backup_detector.publishBackupMsg();
+        // Publish results
+        backup_detector.publishBackupMsg();
         backup_detector.publishQueryPointsPcl();
         ros::spinOnce();
         loop_rate.sleep();

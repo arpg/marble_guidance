@@ -3,19 +3,26 @@
   <!-- Launch the octomap to laserscan node -->
   <!-- <include file="find"  -->
   <arg name="vehicle_name"   default="X1"/>
+  <arg name="map_frame"      default="world"/>
+  <arg name="resolution"     default=".15"/>
 
   <node name="backup_detector" type= "backup_detector_node" pkg="marble_guidance" output="screen">
 
     <remap from="backup_detector/laserscan"         to="octomap_laserscan"/>
     <remap from="backup_detector/octomap"           to="X1/merged_map"/>
-    <remap from="backup_detector/imu"               to="imu/data"/>
+    <remap from="backup_detector/imu"               to="X1/imu/data"/>
 
-    <param name="total_scan_points"                 value="100"/>
-    <param name="min_turnaround_distance"           value="0.1"/>
-    <param name="pitch_limit"                       value="20.0"/>
+    <param name="vehicle_name"                      value="$(arg vehicle_name)"/>
+    <param name="map_frame"                         value="$(arg map_frame)"/>
 
-    <param name="safety_radius"              value="2.0"/>
-    <param name="resolution"          value=".15"/>
+    <param name="pitch_limit"                       value=".1"/>
+    <param name="safety_radius"                     value="2.0"/>
+    <param name="z_lower_threshold"                 value=".45"/>
+    <param name="resolution"                        value="$(arg resolution)"/>
+
+    <param name="num_query_point_rows"              value="10"/>
+    <param name="num_query_point_cols"              value="10"/>
+    <param name="num_query_point_layers"            value="10"/>
 
   </node>
 
