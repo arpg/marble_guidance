@@ -19,4 +19,9 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
   </include>
 
+  <!-- Motion comand filter -->
+  <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+  </include>
+
 </launch>
