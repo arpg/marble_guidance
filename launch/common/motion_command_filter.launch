@@ -6,16 +6,20 @@
 
     <remap from="motion_command_filter/odometry_map"    to="odometry_map"/>
     <remap from="motion_command_filter/cmd_vel"         to="cmd_vel"/>
+    <remap from="motion_command_filter/cmd_vel_stamped" to="cmd_vel"/>
     <remap from="motion_command_filter/enable_backup"   to="enable_backup"/>
     <remap from="motion_command_filter/follow_traj"     to="follow_traj"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
+    <param name="use_stamped_twist"               value="false"/>
+    <param name="connection_failure_thresh"       value="1.0"/>
 
+    <param name="yawrate_k0"                      value="1.0"/>
+    <param name="yawrate_kd"                      value="1.0"/>
     <param name="max_yawrate"                     value="0.5"/>
     <param name="max_forward_speed"               value="1.0"/>
-    <param name="turn_in_place_thresh"            value="1.0"/>
-
+    <param name="lookahead_distance_threshold"    value="1.0"/>
 
   </node>
 

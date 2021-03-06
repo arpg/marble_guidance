@@ -49,7 +49,25 @@ class motionCommandFilter {
     void trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
     void backupCmdCb(const std_msgs::BoolConstPtr& msg);
+    void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void filterCommands();
+    void publishCommands();
+    void checkConnections();
+    void determineMotionState();
+    geometry_msgs::Twist computeBackupCmd(geometry_msgs::Point lookahead);
+    float wrapAngle(float angle);
+    float sat(float num, float min_val, float max_val);
+    float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
+
+    enum Constants{
+      STARTUP = 0,
+      ESTOP = 1,
+      PATH_FOLLOW = 2,
+      TRAJ_FOLLOW = 3,
+      PATH_BACKUP = 4,
+      TRAJ_BACKUP = 5,
+      ERROR = 10,
+    };
 
  private:
     // public ros node handle
@@ -65,15 +83,20 @@ class motionCommandFilter {
     ros::Subscriber sub_traj_motion_cmd_;
     ros::Subscriber sub_follow_traj_;
     ros::Subscriber sub_backup_cmd_;
+    ros::Subscriber sub_estop_cmd_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
+    ros::Publisher pub_cmd_vel_stamped_;
 
     string vehicle_name_;
     int loop_rate_;
+    bool use_stamped_twist_;
+    double connection_failure_thresh_;
 
     // odomCb
     bool have_odom_;
+    ros::Time last_odom_time_;
     nav_msgs::Odometry current_odom_;
     geometry_msgs::Point current_pos_;
     double current_roll_;
@@ -82,12 +105,14 @@ class motionCommandFilter {
 
     // pathMotionCmdCb
     bool have_path_motion_cmd_;
+    ros::Time last_path_time_;
     int path_motion_type_;
     geometry_msgs::Twist path_cmd_vel_;
     geometry_msgs::Point path_lookahead_;
 
     // trajMotionCmdCb
     bool have_traj_motion_cmd_;
+    ros::Time last_traj_time_;
     int traj_motion_type_;
     geometry_msgs::Twist traj_cmd_vel_;
     geometry_msgs::Point traj_lookahead_;
@@ -98,6 +123,33 @@ class motionCommandFilter {
     // backupCmdCb
     bool enable_backup_;
 
+    // estopCmdCb
+    bool estop_cmd_;
+
+    // determineMotionState
+    int state_;
+    int s_startup_;
+    int s_estop_;
+
+    int s_path_follow_;
+    int s_traj_follow_;
+    int s_path_backup_;
+    int s_traj_backup_;
+    int s_error_;
+
+    int a_fwd_motion_;
+    int a_turnaround_;
+
+    // filterCommands
+    geometry_msgs::TwistStamped control_command_msg_stamped_;
+    geometry_msgs::Twist control_command_msg_;
+
+    // computeBackupCmd
+    double lookahead_dist_thresh_;
+    double yawrate_k0_;
+    double yawrate_kd_;
+    double yawrate_max_;
+    double u_cmd_max_;
 
 
 }; // class SimpleNodeClass

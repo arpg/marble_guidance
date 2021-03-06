@@ -16,10 +16,24 @@ void motionCommandFilter::init() {
     sub_traj_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
     sub_backup_cmd_ = nh_.subscribe("enable_backup", 1, &motionCommandFilter::backupCmdCb, this);
+    sub_estop_cmd_ = nh_.subscribe("estop_cmd", 1, &motionCommandFilter::estopCmdCb, this);
 
-    pub_cmd_vel_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel", 10);
+    pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
+    pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
+    pnh_.param("use_stamped_twist", use_stamped_twist_, false);
+    pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
+
+    pnh_.param("yawrate_k0", yawrate_k0_, 1.0);
+    pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
+    pnh_.param("yawrate_max", yawrate_max_ , 1.0);
+    pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
+    pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
+
+    state_ = motionCommandFilter::STARTUP;
+    a_fwd_motion_ = 0;
+    a_turnaround_ = 1;
 
     // have_traj_motion_cmd_ = false;
     // have_path_motion_cmd_ = false;
@@ -30,6 +44,7 @@ void motionCommandFilter::init() {
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
 
   if(!have_odom_) have_odom_ = true;
+  last_odom_time_ = ros::Time::now();
   current_odom_ = *odom_msg;
   current_pos_ = current_odom_.pose.pose.position;
   geometry_msgs::Quaternion vehicle_quat_msg = current_odom_.pose.pose.orientation;
@@ -41,6 +56,7 @@ void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
 
 void motionCommandFilter::pathMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg){
   if(!have_path_motion_cmd_) have_path_motion_cmd_ = true;
+  last_path_time_ = ros::Time::now();
   path_motion_type_ = msg->motion_type;
   path_cmd_vel_ = msg->cmd_vel;
   path_lookahead_ = msg->lookahead_point;
@@ -48,6 +64,7 @@ void motionCommandFilter::pathMotionCmdCb(const marble_guidance::MotionCmdConstP
 
 void motionCommandFilter::trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg){
   if(!have_traj_motion_cmd_) have_traj_motion_cmd_ = true;
+  last_traj_time_ = ros::Time::now();
   traj_motion_type_ = msg->motion_type;
   traj_cmd_vel_ = msg->cmd_vel;
   traj_lookahead_ = msg->lookahead_point;
@@ -61,9 +78,234 @@ void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
   enable_backup_ = msg->data;
 }
 
+void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
+  estop_cmd_ = msg->data;
+}
+
+void motionCommandFilter::checkConnections(){
+
+    // Check odom connection
+    if((ros::Time::now() - last_traj_time_).toSec() > connection_failure_thresh_){
+      have_odom_ = false;
+      if(state_ != s_startup_){
+        ROS_INFO_THROTTLE(1.0,"Error: Lost odometry...");
+      }
+    }
+
+  // Check path connection
+  if((ros::Time::now() - last_path_time_).toSec() > connection_failure_thresh_){
+    have_path_motion_cmd_ = false;
+    if(state_ != s_startup_){
+      ROS_INFO_THROTTLE(1.0,"Error: Lost path commands...");
+    }
+  }
+
+  // Check traj connection
+  if((ros::Time::now() - last_traj_time_).toSec() > connection_failure_thresh_){
+    have_traj_motion_cmd_ = false;
+    if(state_ != s_startup_){
+      ROS_INFO_THROTTLE(1.0,"Error: Lost trajectory commands...");
+    }
+  }
+
+}
+
+void motionCommandFilter::determineMotionState(){
+
+  // Motion state machine based on information received from callbacks
+
+  switch(state_){
+
+    case motionCommandFilter::STARTUP:
+      // If we are in startup mode and we have a path motion command and odom
+      // we can start following the path
+      if(have_odom_ && have_path_motion_cmd_){
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+      break;
+
+    case motionCommandFilter::PATH_FOLLOW:
+
+      // If we get a path command to turn around, but enable backup is true
+      // switch to backup path following
+      if((path_motion_type_ == a_turnaround_) && enable_backup_){
+        state_ = motionCommandFilter::PATH_BACKUP;
+      }
+
+      // If we get a command to start following our trajectory
+      // and we have a trajectory following commands
+      if(enable_trajectory_following_ && have_traj_motion_cmd_){
+        // If we should backup instead of turn in place, switch to
+        // trajectory backup state, else turn in place and follower
+        // trajectory like normal.
+        if(enable_backup_){
+          state_ = motionCommandFilter::TRAJ_BACKUP;
+        } else {
+          state_ = motionCommandFilter::TRAJ_FOLLOW;
+        }
+      }
+      break;
+
+    case motionCommandFilter::TRAJ_FOLLOW:
+      // If we are trajectory following and enable_trajectory_following
+      // changes to false, switch back to path following.
+      if(!enable_trajectory_following_ && have_path_motion_cmd_){
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+      // If we get a traj command to turn around, but enable backup is true
+      // switch to traj backup mode
+      if((traj_motion_type_ == a_turnaround_) && enable_backup_){
+        state_ = motionCommandFilter::TRAJ_BACKUP;
+      }
+      break;
+
+    case motionCommandFilter::PATH_BACKUP:
+      if(!enable_backup_){
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+      if(enable_trajectory_following_){
+        state_ = motionCommandFilter::TRAJ_FOLLOW;
+      }
+      break;
+
+    case motionCommandFilter::TRAJ_BACKUP:
+      if(!enable_backup_){
+        state_ = motionCommandFilter::TRAJ_FOLLOW;
+      }
+      if(!enable_trajectory_following_){
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+      break;
+
+    case motionCommandFilter::ESTOP:
+      if(!estop_cmd_){
+        if(enable_trajectory_following_ && have_traj_motion_cmd_ && have_odom_){
+          state_ = motionCommandFilter::TRAJ_FOLLOW;
+        }
+        if(!enable_trajectory_following_ && have_path_motion_cmd_ && have_odom_){
+          state_ = motionCommandFilter::PATH_FOLLOW;
+        }
+      }
+      break;
+
+  }
+
+  // No matter what state we are in, switch to s_estop
+  // if we receive an estop command.
+  if(estop_cmd_) state_ = motionCommandFilter::ESTOP;
+
+}
+
 void motionCommandFilter::filterCommands(){
   // Filter all the incoming commands
 
+  switch(state_){
+
+    case motionCommandFilter::STARTUP:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: startup");
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = 0.0;
+      break;
+
+    case motionCommandFilter::ESTOP:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: estop");
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = 0.0;
+      break;
+
+    case motionCommandFilter::PATH_FOLLOW:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: path follow");
+      control_command_msg_ = path_cmd_vel_;
+      break;
+
+    case motionCommandFilter::TRAJ_FOLLOW:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: trajectory follow");
+      control_command_msg_ = traj_cmd_vel_;
+      break;
+
+    case motionCommandFilter::PATH_BACKUP:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: path backup");
+      control_command_msg_ = computeBackupCmd(path_lookahead_);
+      break;
+
+    case motionCommandFilter::TRAJ_BACKUP:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: trajectory backup");
+      control_command_msg_ = computeBackupCmd(traj_lookahead_);
+      break;
+
+    case motionCommandFilter::ERROR:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: error");
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = 0.0;
+      break;
+
+  }
+
+}
+
+geometry_msgs::Twist motionCommandFilter::computeBackupCmd(geometry_msgs::Point lookahead){
+
+  float u_cmd;
+  float yawrate_cmd;
+
+  // Create a yaw rate command from the heading error to the lookahead point
+  float relative_lookahead_heading = atan2((lookahead.y - current_pos_.y), (lookahead.x - current_pos_.x));
+  float lookahead_angle_error = wrapAngle(relative_lookahead_heading - (current_yaw_ + M_PI));
+  float distance = dist(current_pos_, lookahead);
+  //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
+
+  // Use an exponential attractor to generate yawrate cmds
+  yawrate_cmd = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*distance), -yawrate_max_, yawrate_max_);
+
+  // FORWARD SPEED COMMAND
+  // Slow down if we are approaching the lookahead point
+  u_cmd = -sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  distance)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
+
+  geometry_msgs::Twist backup_cmd;
+  backup_cmd.linear.x = u_cmd;
+  backup_cmd.angular.z = yawrate_cmd;
+
+  return backup_cmd;
+
+}
+
+void motionCommandFilter::publishCommands(){
+
+  if(use_stamped_twist_){
+    control_command_msg_stamped_.header.stamp = ros::Time::now();
+    control_command_msg_stamped_.twist = control_command_msg_;
+    pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
+  } else {
+    pub_cmd_vel_.publish(control_command_msg_);
+  }
+
+}
+
+float motionCommandFilter::dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2)
+{
+    float distance = sqrt(pow((p1.x - p2.x),2) + pow((p1.y - p2.y),2));
+    return distance;
+}
+
+float motionCommandFilter::wrapAngle(float angle){
+
+    if (angle > M_PI){
+        angle -= 2*M_PI;
+    } else if( angle < -M_PI){
+        angle += 2*M_PI;
+    }
+    return angle;
+}
+
+float motionCommandFilter::sat(float num, float min_val, float max_val){
+
+    if (num >= max_val){
+        return max_val;
+    } else if( num <= min_val){
+         return min_val;
+    } else {
+      return num;
+    }
 }
 
  // end of class
