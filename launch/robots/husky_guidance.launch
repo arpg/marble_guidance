@@ -1,22 +1,22 @@
 <launch>
 
   <arg name="vehicle_name"            default="X1"/>
-  <arg name="enable_ground_truth"     default="False"/>
+  <arg name="enable_ground_truth"     default="True"/>
 
   <!-- Path follower -->
   <include file="$(find marble_guidance)/launch/common/path_follower.launch">
       <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
   </include>
 
-  <!-- Backup detection -->
-  <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
-    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-  </include>
-
   <!-- Trajectory follower -->
   <include file="$(find marble_guidance)/launch/common/trajectory_follower.launch">
     <arg name="vehicle_name" value="$(arg vehicle_name)"/>
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)"/>
+  </include>
+
+  <!-- Backup detection -->
+  <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
   </include>
 
 </launch>
