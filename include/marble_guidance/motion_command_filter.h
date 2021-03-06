@@ -50,7 +50,6 @@ class motionCommandFilter {
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
     void backupCmdCb(const std_msgs::BoolConstPtr& msg);
     void filterCommands();
-    int getLoopRate();
 
  private:
     // public ros node handle

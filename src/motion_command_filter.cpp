@@ -20,7 +20,6 @@ void motionCommandFilter::init() {
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel", 10);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
-    pnh_.param("loop_rate", loop_rate_, 10);
 
     // have_traj_motion_cmd_ = false;
     // have_path_motion_cmd_ = false;
@@ -66,11 +65,6 @@ void motionCommandFilter::filterCommands(){
   // Filter all the incoming commands
 
 }
-
-int motionCommandFilter::getLoopRate(){
-  return loop_rate_;
-}
-
 
  // end of class
 } // End of namespace nearness

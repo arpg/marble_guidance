@@ -9,7 +9,10 @@ int main(int argc, char** argv) {
   //nearness::NearnessController nearness_controller_node(nh, nh_private);
   trajectory_follower::trajectoryFollower trajectory_follower_node(nh, nh_private);
 
-  ros::Rate loop_rate(trajectory_follower_node.getLoopRate());
+  int rate;
+  nh_private.param("loop_rate", rate, 10);
+  ros::Rate loop_rate(rate);
+  
   bool enable_ground_truth = trajectory_follower_node.getGroundTruth();
 
   while(ros::ok()){

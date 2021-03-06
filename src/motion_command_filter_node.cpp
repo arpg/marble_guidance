@@ -8,8 +8,11 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh_private("~");
     //nearness::NearnessController nearness_controller_node(nh, nh_private);
     motion_command_filter::motionCommandFilter motion_command_filter_node(nh, nh_private);
-
-    ros::Rate loop_rate(motion_command_filter_node.getLoopRate());
+    
+    int rate;
+    nh_private.param("loop_rate", rate, 10);
+    ros::Rate loop_rate(rate);
+    //ros::Rate loop_rate(motion_command_filter_node.getLoopRate());
 
     while(ros::ok()){
 

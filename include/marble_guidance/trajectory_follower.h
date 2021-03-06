@@ -57,7 +57,6 @@ class trajectoryFollower {
     void followTrajCb(const std_msgs::BoolConstPtr& follow_traj_msg);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
     bool doLookup();
-    int getLoopRate();
     bool getGroundTruth();
     void computeCmdVel();
     float wrapAngle(float angle);

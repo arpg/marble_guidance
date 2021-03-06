@@ -15,9 +15,10 @@ int main(int argc, char** argv) {
     tf2_ros::Buffer tf_buffer;
     tf2_ros::TransformListener tf_listener(tf_buffer);
     geometry_msgs::TransformStamped transform_stamped;
-
-    ros::Rate loop_rate(10);
-
+    int rate;
+    nh_private.param("loop_rate", rate, 10);
+    ros::Rate loop_rate(rate);
+    
     while(ros::ok()){
 
         // Check for a new tf
