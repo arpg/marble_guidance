@@ -17,7 +17,7 @@ void trajectoryFollower::init() {
     sub_gt_traj_ = nh_.subscribe("ground_truth_trajectory", 1, &trajectoryFollower::gtTrajCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &trajectoryFollower::followTrajCb, this);
 
-    pub_lookahead_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead", 10);
+    pub_lookahead_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead_point", 10);
     pub_traj_motion_cmd_ = nh_.advertise<marble_guidance::MotionCmd>("motion_cmd", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
