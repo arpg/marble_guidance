@@ -1,4 +1,4 @@
-#include "nearness_control/motion_command_filter.h"
+#include "marble_guidance/motion_command_filter.h"
 #include <string>
 
 int main(int argc, char** argv) {
@@ -9,12 +9,14 @@ int main(int argc, char** argv) {
     //nearness::NearnessController nearness_controller_node(nh, nh_private);
     motion_command_filter::motionCommandFilter motion_command_filter_node(nh, nh_private);
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(motion_command_filter_node.getLoopRate());
 
     while(ros::ok()){
 
+        motion_command_filter_node.filterCommands();
+
         ros::spinOnce();
         loop_rate.sleep();
-        
+
     }
 }

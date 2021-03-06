@@ -1,62 +1,75 @@
-#include <nearness_control/trajectory_generator.h>
+#include <marble_guidance/motion_command_filter.h>
 
 using namespace std;
-namespace trajectory_generator{
-trajectoryGenerator::trajectoryGenerator(const ros::NodeHandle &node_handle,
+namespace motion_command_filter{
+motionCommandFilter::motionCommandFilter(const ros::NodeHandle &node_handle,
                                        const ros::NodeHandle &private_node_handle)
       :nh_(node_handle),
        pnh_(private_node_handle){
       this->init();
   }
 
-void trajectoryGenerator::init() {
+void motionCommandFilter::init() {
 
-    sub_odom_ = nh_.subscribe("odometry_map", 1, &trajectoryGenerator::odomCb, this);
+    sub_odom_ = nh_.subscribe("odometry_map", 1, &motionCommandFilter::odomCb, this);
+    sub_path_motion_cmd_ = nh_.subscribe("traj_motion_cmd", 1, &motionCommandFilter::pathMotionCmdCb, this);
+    sub_traj_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
+    sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
+    sub_backup_cmd_ = nh_.subscribe("enable_backup", 1, &motionCommandFilter::backupCmdCb, this);
 
-    pub_traj_ = nh_.advertise<nearness_control_msgs::TrajList>("ground_truth_trajectory", 10);
+    pub_cmd_vel_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel", 10);
 
-    pnh_.param("trajectory_point_distance_thresh", traj_point_dist_thresh_, 0.1);
+    pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
+    pnh_.param("loop_rate", loop_rate_, 10);
 
-    traj_point_dist_thresh_ = .1;
-    initialized_ = false;
-    count_ = 0;
-
-}
-
-void trajectoryGenerator::odomCb(const nav_msgs::OdometryConstPtr& odom_msg)
-{
-    ROS_INFO_THROTTLE(1,"Received odom");
-    odom_ = *odom_msg;
-    odom_point_ =  odom_.pose.pose.position;
-
-    if(!initialized_){
-      traj_list_points_.push_back(odom_point_);
-      initialized_ = true;
-    }
-
-    //ROS_INFO_THROTTLE(1,"x: %f, y: %f", odom_point_.x, odom_point_.y);
-    float distance = dist(odom_point_, traj_list_points_[count_]);
-    if(distance > traj_point_dist_thresh_){
-      traj_list_points_.push_back(odom_point_);
-      count_++;
-    }
+    // have_traj_motion_cmd_ = false;
+    // have_path_motion_cmd_ = false;
+    // have_odom_ = false;
 
 }
 
-float trajectoryGenerator::dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2)
-{
-    float distance = sqrt(pow((p1.x - p2.x),2) + pow((p1.y - p2.y),2));
-    return distance;
+void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
+
+  if(!have_odom_) have_odom_ = true;
+  current_odom_ = *odom_msg;
+  current_pos_ = current_odom_.pose.pose.position;
+  geometry_msgs::Quaternion vehicle_quat_msg = current_odom_.pose.pose.orientation;
+  tf::Quaternion vehicle_quat_tf;
+  tf::quaternionMsgToTF(vehicle_quat_msg, vehicle_quat_tf);
+  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_yaw_);
+
 }
 
-void trajectoryGenerator::publishTrajectory()
-{
-    traj_list_msg_.traj_points.clear();
-    traj_list_msg_.traj_list_size = count_;
-    traj_list_msg_.traj_points = traj_list_points_;
-    pub_traj_.publish(traj_list_msg_);
+void motionCommandFilter::pathMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg){
+  if(!have_path_motion_cmd_) have_path_motion_cmd_ = true;
+  path_motion_type_ = msg->motion_type;
+  path_cmd_vel_ = msg->cmd_vel;
+  path_lookahead_ = msg->lookahead_point;
 }
 
+void motionCommandFilter::trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg){
+  if(!have_traj_motion_cmd_) have_traj_motion_cmd_ = true;
+  traj_motion_type_ = msg->motion_type;
+  traj_cmd_vel_ = msg->cmd_vel;
+  traj_lookahead_ = msg->lookahead_point;
+}
+
+void motionCommandFilter::followTrajCb(const std_msgs::BoolConstPtr& msg){
+  enable_trajectory_following_ = msg->data;
+}
+
+void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
+  enable_backup_ = msg->data;
+}
+
+void motionCommandFilter::filterCommands(){
+  // Filter all the incoming commands
+
+}
+
+int motionCommandFilter::getLoopRate(){
+  return loop_rate_;
+}
 
 
  // end of class

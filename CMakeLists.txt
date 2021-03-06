@@ -93,5 +93,11 @@ target_link_libraries(backup_detector ${catkin_LIBRARIES} )
 add_executable(backup_detector_node src/backup_detector_node.cpp)
 target_link_libraries(backup_detector_node backup_detector ${catkin_LIBRARIES})
 
+add_library(motion_command_filter src/motion_command_filter.cpp)
+target_link_libraries(motion_command_filter ${catkin_LIBRARIES} )
+
+add_executable(motion_command_filter_node src/motion_command_filter_node.cpp)
+target_link_libraries(motion_command_filter_node motion_command_filter ${catkin_LIBRARIES})
+
 add_executable(tf2odom src/tf2odom.cpp)
 target_link_libraries(tf2odom ${catkin_LIBRARIES})

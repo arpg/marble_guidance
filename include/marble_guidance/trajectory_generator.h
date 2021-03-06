@@ -65,7 +65,7 @@ class trajectoryGenerator {
     geometry_msgs::Point odom_point_;
 
     vector<geometry_msgs::Point> traj_list_points_;
-    nearness_control_msgs::TrajList traj_list_msg_;
+    marble_guidance::TrajList traj_list_msg_;
     double traj_point_dist_thresh_;
 
     bool initialized_;
