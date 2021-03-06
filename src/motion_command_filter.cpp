@@ -1,4 +1,4 @@
-#include <marble_guidance/trajectory_generator.h>
+#include <nearness_control/trajectory_generator.h>
 
 using namespace std;
 namespace trajectory_generator{
@@ -13,7 +13,7 @@ void trajectoryGenerator::init() {
 
     sub_odom_ = nh_.subscribe("odometry_map", 1, &trajectoryGenerator::odomCb, this);
 
-    pub_traj_ = nh_.advertise<marble_guidance::TrajList>("ground_truth_trajectory", 10);
+    pub_traj_ = nh_.advertise<nearness_control_msgs::TrajList>("ground_truth_trajectory", 10);
 
     pnh_.param("trajectory_point_distance_thresh", traj_point_dist_thresh_, 0.1);
 
