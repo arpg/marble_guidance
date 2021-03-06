@@ -74,11 +74,11 @@ target_link_libraries(path_follower ${catkin_LIBRARIES} )
 add_executable(path_follower_node src/path_follower_node.cpp)
 target_link_libraries(path_follower_node path_follower ${catkin_LIBRARIES})
 
-add_library(trajectory_follower_node src/trajectory_follower_node.cpp)
-target_link_libraries(trajectory_follower_node ${catkin_LIBRARIES} )
+add_library(trajectory_follower src/trajectory_follower.cpp)
+target_link_libraries(trajectory_follower ${catkin_LIBRARIES} )
 
-add_executable(trajectory_follower src/trajectory_follower.cpp)
-target_link_libraries(trajectory_follower trajectory_follower_node ${catkin_LIBRARIES})
+add_executable(trajectory_follower_node src/trajectory_follower_node.cpp)
+target_link_libraries(trajectory_follower_node trajectory_follower ${catkin_LIBRARIES})
 
 add_library(trajectory_generator_node src/trajectory_generator_node.cpp)
 target_link_libraries(trajectory_generator_node ${catkin_LIBRARIES} )

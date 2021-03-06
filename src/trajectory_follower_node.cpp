@@ -12,9 +12,9 @@ int main(int argc, char** argv) {
   int rate;
   nh_private.param("loop_rate", rate, 10);
   ros::Rate loop_rate(rate);
-  
-  bool enable_ground_truth = trajectory_follower_node.getGroundTruth();
 
+  bool enable_ground_truth = trajectory_follower_node.getGroundTruth();
+  ROS_INFO("Enable ground truth: %d", enable_ground_truth);
   while(ros::ok()){
 
     if(trajectory_follower_node.doLookup()){

@@ -24,7 +24,6 @@ void trajectoryFollower::init() {
     std::string vehicle_name;
     pnh_.param<std::string>("vehicle_name", vehicle_name,"X1");
     pnh_.param("enable_ground_truth", enable_ground_truth_, false);
-
     pnh_.param("turn_in_place_thresh", turn_in_place_thresh_, 1.0);
     pnh_.param("turn_in_place_yawrate", turn_in_place_yawrate_, 1.0);
     pnh_.param("yawrate_k0", yawrate_k0_, 1.0);
@@ -296,7 +295,7 @@ float trajectoryFollower::sat(float num, float min_val, float max_val){
 }
 
 bool trajectoryFollower::doLookup(){
-    return (enable_lookahead_lookup_);
+    return enable_lookahead_lookup_;
 }
 
 
