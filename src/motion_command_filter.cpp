@@ -297,7 +297,7 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
   // Slow down if we are approaching the lookahead point
   u_cmd = -sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  distance)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
   if(enable_speed_regulation_){
-    u_cmd = sat(u_cmd - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
+    u_cmd = sat(u_cmd + yaw_error_k_*abs(lookahead_angle_error), -u_cmd_max_, 0.0);
   }
 
   geometry_msgs::Twist backup_cmd;

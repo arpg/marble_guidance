@@ -18,11 +18,11 @@
 
     <param name="yawrate_k0"                      value="1.0"/>
     <param name="yawrate_kd"                      value="1.0"/>
-    <param name="max_yawrate"                     value="0.5"/>
+    <param name="max_yawrate"                     value="0.75"/>
     <param name="max_forward_speed"               value="0.5"/>
     <param name="lookahead_distance_threshold"    value="1.0"/>
     <param name="enable_speed_regulation"         value="true"/>
-    <param name="yaw_error_k"                     value=".5"/>
+    <param name="yaw_error_k"                     value="1.0"/>
 
   </node>
 
