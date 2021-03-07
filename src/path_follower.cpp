@@ -109,6 +109,7 @@ void pathFollower::computeControlCommands(){
   } else {
     // Lookahead angle error is larger than threshold, so we should turn in place
     yawrate_cmd_ = turn_in_place_yawrate_;
+    yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -turn_in_place_yawrate_, turn_in_place_yawrate_);
     turn_in_place_ = true;
   }
 

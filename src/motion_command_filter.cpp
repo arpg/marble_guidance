@@ -12,13 +12,13 @@ motionCommandFilter::motionCommandFilter(const ros::NodeHandle &node_handle,
 void motionCommandFilter::init() {
 
     sub_odom_ = nh_.subscribe("odometry_map", 1, &motionCommandFilter::odomCb, this);
-    sub_path_motion_cmd_ = nh_.subscribe("traj_motion_cmd", 1, &motionCommandFilter::pathMotionCmdCb, this);
-    sub_traj_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
+    sub_path_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::pathMotionCmdCb, this);
+    sub_traj_motion_cmd_ = nh_.subscribe("traj_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
     sub_backup_cmd_ = nh_.subscribe("enable_backup", 1, &motionCommandFilter::backupCmdCb, this);
     sub_estop_cmd_ = nh_.subscribe("estop_cmd", 1, &motionCommandFilter::estopCmdCb, this);
 
-    pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
+    // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
@@ -34,6 +34,10 @@ void motionCommandFilter::init() {
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
     a_turnaround_ = 1;
+
+    estop_cmd_ = false;
+    enable_trajectory_following_ = false;
+    enable_backup_ = false;
 
     // have_traj_motion_cmd_ = false;
     // have_path_motion_cmd_ = false;
@@ -59,6 +63,7 @@ void motionCommandFilter::pathMotionCmdCb(const marble_guidance::MotionCmdConstP
   last_path_time_ = ros::Time::now();
   path_motion_type_ = msg->motion_type;
   path_cmd_vel_ = msg->cmd_vel;
+  //ROS_INFO("Motion cmd x: %f", path_cmd_vel_.linear.x);
   path_lookahead_ = msg->lookahead_point;
 }
 
@@ -79,6 +84,7 @@ void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
 }
 
 void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
+  ROS_INFO("Received estop command.");
   estop_cmd_ = msg->data;
 }
 
@@ -271,13 +277,13 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(geometry_msgs::Point 
 
 void motionCommandFilter::publishCommands(){
 
-  if(use_stamped_twist_){
-    control_command_msg_stamped_.header.stamp = ros::Time::now();
-    control_command_msg_stamped_.twist = control_command_msg_;
-    pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
-  } else {
+  // if(use_stamped_twist_){
+  //   control_command_msg_stamped_.header.stamp = ros::Time::now();
+  //   control_command_msg_stamped_.twist = control_command_msg_;
+  //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
+  // } else {
     pub_cmd_vel_.publish(control_command_msg_);
-  }
+  // }
 
 }
 
