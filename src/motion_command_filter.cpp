@@ -30,6 +30,8 @@ void motionCommandFilter::init() {
     pnh_.param("yawrate_max", yawrate_max_ , 1.0);
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
+    pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
+    pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
@@ -294,6 +296,9 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
   // FORWARD SPEED COMMAND
   // Slow down if we are approaching the lookahead point
   u_cmd = -sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  distance)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
+  if(enable_speed_regulation_){
+    u_cmd = sat(u_cmd - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
+  }
 
   geometry_msgs::Twist backup_cmd;
   backup_cmd.linear.x = u_cmd;

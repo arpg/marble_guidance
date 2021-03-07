@@ -152,6 +152,8 @@ class motionCommandFilter {
     double yawrate_kd_;
     double yawrate_max_;
     double u_cmd_max_;
+    bool enable_speed_regulation_;
+    double yaw_error_k_;
 
 
 }; // class SimpleNodeClass

@@ -207,7 +207,8 @@ void trajectoryFollower::computeCmdVel(){
 
     if(abs(lookahead_angle_error) < turn_in_place_thresh_){
       // Use an exponential attractor to generate yawrate cmds
-      yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*distance), -yawrate_max_, yawrate_max_);
+      //yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*distance), -yawrate_max_, yawrate_max_);
+      yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -turn_in_place_yawrate_, turn_in_place_yawrate_);
       turn_in_place_ = false;
     } else {
       // Lookahead angle error is larger than threshold, so we should turn in place
