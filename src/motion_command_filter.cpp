@@ -167,7 +167,7 @@ void motionCommandFilter::determineMotionState(){
 
     case motionCommandFilter::PATH_BACKUP:
       if(!enable_backup_){
-        state_ = motionCommandFilter::PATH_FOLLOW;
+        state_ = motionCommandFilter::PATH_TURN_AROUND;
       }
       if(enable_trajectory_following_){
         state_ = motionCommandFilter::TRAJ_FOLLOW;
@@ -176,6 +176,24 @@ void motionCommandFilter::determineMotionState(){
 
     case motionCommandFilter::TRAJ_BACKUP:
       if(!enable_backup_){
+        state_ = motionCommandFilter::TRAJ_TURN_AROUND;
+      }
+      if(!enable_trajectory_following_){
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+      break;
+
+    case motionCommandFilter::PATH_TURN_AROUND:
+      if(path_motion_type_ = a_fwd_motion_){
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+      if(!enable_trajectory_following_){
+        state_ = motionCommandFilter::TRAJ_FOLLOW;
+      }
+      break;
+
+    case motionCommandFilter::TRAJ_TURN_AROUND:
+      if(traj_motion_type_ = a_fwd_motion_){
         state_ = motionCommandFilter::TRAJ_FOLLOW;
       }
       if(!enable_trajectory_following_){
@@ -239,6 +257,16 @@ void motionCommandFilter::filterCommands(){
       control_command_msg_ = computeBackupCmd(traj_lookahead_);
       break;
 
+    case motionCommandFilter::PATH_TURN_AROUND:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: turning around");
+      control_command_msg_ = path_cmd_vel_;
+      break;
+
+    case motionCommandFilter::TRAJ_TURN_AROUND:
+      ROS_INFO_THROTTLE(1.0,"Motion filter: turning around");
+      control_command_msg_ = traj_cmd_vel_;
+      break;
+
     case motionCommandFilter::ERROR:
       ROS_INFO_THROTTLE(1.0,"Motion filter: error");
       control_command_msg_.linear.x = 0.0;
@@ -249,7 +277,7 @@ void motionCommandFilter::filterCommands(){
 
 }
 
-geometry_msgs::Twist motionCommandFilter::computeBackupCmd(geometry_msgs::Point lookahead){
+geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::Point lookahead){
 
   float u_cmd;
   float yawrate_cmd;
@@ -315,4 +343,4 @@ float motionCommandFilter::sat(float num, float min_val, float max_val){
 }
 
  // end of class
-} // End of namespace nearness
+} // End of namespace motion_command_filter

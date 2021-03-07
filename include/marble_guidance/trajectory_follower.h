@@ -122,6 +122,8 @@ class trajectoryFollower {
     double u_cmd_max_;
     float yawrate_cmd_;
     float u_cmd_;
+    bool enable_speed_regulation_;
+    double yaw_error_k_;
 
     bool turn_in_place_;
     marble_guidance::MotionCmd traj_motion_cmd_;

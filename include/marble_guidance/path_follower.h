@@ -94,6 +94,8 @@ class pathFollower{
     geometry_msgs::Twist cmd_vel_msg_;
     float u_cmd_;
     double u_cmd_max_;
+    bool enable_speed_regulation_;
+    double yaw_error_k_;
 
     bool enable_backup_;
     marble_guidance::MotionCmd path_motion_cmd_msg_;

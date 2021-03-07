@@ -60,4 +60,4 @@ void trajectoryGenerator::publishTrajectory()
 
 
  // end of class
-} // End of namespace nearness
+} // End of namespace trajectory_generator

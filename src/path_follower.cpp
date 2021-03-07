@@ -24,6 +24,8 @@ void pathFollower::init() {
     pnh_.param("yawrate_max", yawrate_max_ , 1.0);
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
+    pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
+    pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
     pnh_.param("enable_debug", debug_, false);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
@@ -117,6 +119,9 @@ void pathFollower::computeControlCommands(){
   if(!turn_in_place_){
     // Slow down if we are approaching the lookahead point
     u_cmd_ = sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  dist)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
+    if(enable_speed_regulation_){
+      u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
+    }
   } else {
     u_cmd_ = 0.0;
   }

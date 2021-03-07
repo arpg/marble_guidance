@@ -247,4 +247,4 @@ vector<string> backupDetector::getFrames(){
 
 
  // end of class
-} // End of namespace nearness
+} // End of namespace backup_detector

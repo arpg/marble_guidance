@@ -14,7 +14,6 @@
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
-    <param name="use_stamped_twist"               value="true"/>
     <param name="connection_failure_thresh"       value="1.0"/>
 
     <param name="yawrate_k0"                      value="1.0"/>
@@ -22,6 +21,8 @@
     <param name="max_yawrate"                     value="0.5"/>
     <param name="max_forward_speed"               value="0.5"/>
     <param name="lookahead_distance_threshold"    value="1.0"/>
+    <param name="enable_speed_regulation"         value="true"/>
+    <param name="yaw_error_k"                     value="1.0"/>
 
   </node>
 

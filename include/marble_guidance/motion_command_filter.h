@@ -54,7 +54,7 @@ class motionCommandFilter {
     void publishCommands();
     void checkConnections();
     void determineMotionState();
-    geometry_msgs::Twist computeBackupCmd(geometry_msgs::Point lookahead);
+    geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
@@ -66,6 +66,8 @@ class motionCommandFilter {
       TRAJ_FOLLOW = 3,
       PATH_BACKUP = 4,
       TRAJ_BACKUP = 5,
+      PATH_TURN_AROUND = 6,
+      TRAJ_TURN_AROUND = 7,
       ERROR = 10,
     };
 

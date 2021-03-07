@@ -6,7 +6,6 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, node_name);
     ros::NodeHandle nh("trajectory_generator");
     ros::NodeHandle nh_private("~");
-    //nearness::NearnessController nearness_controller_node(nh, nh_private);
     trajectory_generator::trajectoryGenerator trajectory_generator_node(nh, nh_private);
 
     ros::Rate loop_rate(10);
