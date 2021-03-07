@@ -14,12 +14,16 @@ void trajectoryGenerator::init() {
     sub_odom_ = nh_.subscribe("odometry_map", 1, &trajectoryGenerator::odomCb, this);
 
     pub_traj_ = nh_.advertise<marble_guidance::TrajList>("ground_truth_trajectory", 10);
+    pub_traj_path_ = nh_.advertise<nav_msgs::Path>("ground_truth_path", 10);
 
     pnh_.param("trajectory_point_distance_thresh", traj_point_dist_thresh_, 0.1);
 
     traj_point_dist_thresh_ = .1;
     initialized_ = false;
     count_ = 0;
+
+    odom_pose_.header.frame_id = "world";
+    traj_list_poses_msg_.header.frame_id = "world";
 
 }
 
@@ -28,6 +32,7 @@ void trajectoryGenerator::odomCb(const nav_msgs::OdometryConstPtr& odom_msg)
     ROS_INFO_THROTTLE(1,"Received odom");
     odom_ = *odom_msg;
     odom_point_ =  odom_.pose.pose.position;
+    odom_pose_.pose = odom_.pose.pose;
 
     if(!initialized_){
       traj_list_points_.push_back(odom_point_);
@@ -38,6 +43,8 @@ void trajectoryGenerator::odomCb(const nav_msgs::OdometryConstPtr& odom_msg)
     float distance = dist(odom_point_, traj_list_points_[count_]);
     if(distance > traj_point_dist_thresh_){
       traj_list_points_.push_back(odom_point_);
+      odom_pose_.header.stamp = ros::Time::now();
+      traj_list_poses_.push_back(odom_pose_);
       count_++;
     }
 
@@ -55,6 +62,10 @@ void trajectoryGenerator::publishTrajectory()
     traj_list_msg_.traj_list_size = count_;
     traj_list_msg_.traj_points = traj_list_points_;
     pub_traj_.publish(traj_list_msg_);
+
+    traj_list_poses_msg_.header.stamp = ros::Time::now();
+    traj_list_poses_msg_.poses = traj_list_poses_;
+    pub_traj_path_.publish(traj_list_poses_msg_);
 }
 
 

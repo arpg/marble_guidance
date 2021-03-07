@@ -27,6 +27,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Range.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <lcd_pkg/PoseGraph.h>
 #include <tf/tf.h>
 #include <math.h>
@@ -60,11 +61,15 @@ class trajectoryGenerator {
 
     // PUBLISHERS //
     ros::Publisher pub_traj_;
+    ros::Publisher pub_traj_path_;
 
     nav_msgs::Odometry odom_;
     geometry_msgs::Point odom_point_;
+    geometry_msgs::PoseStamped odom_pose_;
 
     vector<geometry_msgs::Point> traj_list_points_;
+    vector<geometry_msgs::PoseStamped> traj_list_poses_;
+    nav_msgs::Path traj_list_poses_msg_;
     marble_guidance::TrajList traj_list_msg_;
     double traj_point_dist_thresh_;
 
