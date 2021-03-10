@@ -1,22 +1,27 @@
 <launch>
 
-  <arg name="vehicle_name"     default="D01"/>
+  <arg name="vehicle_name"            default="D01"/>
+  <arg name="enable_ground_truth"     default="false"/>
 
   <!-- Path follower -->
   <include file="$(find marble_guidance)/launch/common/path_follower.launch">
-      <remap from="path_follower/odometry"        to="odometry_map_topic"/>
-      <remap from="path_follower/path"            to="path_topic"/>
-      <remap from="path_follower/cmd_vel"         to="cmd_vel"/>
-      <remap from="path_follower/enable_backup"   to="enable_backup"/>
-
       <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+  </include>
+
+  <!-- Trajectory follower -->
+  <include file="$(find marble_guidance)/launch/common/trajectory_follower.launch">
+    <arg name="vehicle_name" value="$(arg vehicle_name)"/>
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)"/>
   </include>
 
   <!-- Backup detection -->
   <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
-      <remap from="backup_detector/octomap"       to="merged_map"/>
-      <remap from="backup_detector/imu"           to="imu/data"/>
-      <remap from="backup_detector/enable_backup" to="eneable_backup"/>
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+  </include>
+
+  <!-- Motion comand filter -->
+  <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
   </include>
 
 </launch>

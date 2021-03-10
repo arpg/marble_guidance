@@ -35,7 +35,7 @@ void motionCommandFilter::init() {
     a_fwd_motion_ = 0;
     a_turnaround_ = 1;
 
-    estop_cmd_ = false;
+    estop_cmd_ = true;
     enable_trajectory_following_ = false;
     enable_backup_ = false;
 
