@@ -27,6 +27,7 @@ void pathFollower::init() {
     pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
     pnh_.param("enable_debug", debug_, false);
+    pnh_.param("stopping_distance", stopping_dist_, 0.25);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
@@ -123,6 +124,10 @@ void pathFollower::computeControlCommands(){
       u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
     }
   } else {
+    u_cmd_ = 0.0;
+  }
+
+  if(dist <= stopping_dist_){
     u_cmd_ = 0.0;
   }
 

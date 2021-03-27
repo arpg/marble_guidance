@@ -99,6 +99,7 @@ class pathFollower{
 
     bool enable_backup_;
     marble_guidance::MotionCmd path_motion_cmd_msg_;
+    double stopping_dist_;
 
 
 };
