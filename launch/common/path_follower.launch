@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="vehicle_name"          default="X1"/>
-  <arg name="max_yawrate"           default="0.5"/>
+  <arg name="max_yawrate"           default="0.75"/>
   <arg name="max_forward_speed"     default="1.0"/>
   <arg name="lookahead_distance"    default="1.5"/>
   <arg name="yawrate_k0"            default="1.5"/>
@@ -20,11 +20,13 @@
     <param name="yawrate_kd"                      value="$(arg yawrate_kd)"/>
     <param name="max_yawrate"                     value="$(arg max_yawrate)"/>
     <param name="max_forward_speed"               value="$(arg max_forward_speed)"/>
+    <param name="yaw_error_k"                     value="1.0"/>
     <param name="turn_in_place_thresh"            value="1.5"/>
     <param name="turn_in_place_yawrate"           value="0.5"/>
     <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
     <param name="enable_debug"                    value="1"/>
     <param name="enable_speed_regulation"         value="true"/>
+    <param name="stopping_distance"               value="0.25"/>
 
   </node>
 
