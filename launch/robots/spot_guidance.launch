@@ -3,21 +3,43 @@
   <arg name="vehicle_name"            default="D01"/>
   <arg name="enable_ground_truth"     default="false"/>
 
+  <arg name="max_yawrate"             default="0.5"/>
+  <arg name="max_forward_speed"       default="1.0"/>
+  <arg name="lookahead_distance"      default="1.0"/>
+  <arg name="yawrate_k0"              default="1.5"/>
+  <arg name="yawrate_kd"              default="1.0"/>
+
   <!-- Path follower -->
   <include file="$(find marble_guidance)/launch/common/path_follower.launch">
+
       <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+      <arg name="max_yawrate"         value="$(arg max_yawrate)" />
+      <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
+      <arg name="lookahead_distance"  value="$(arg lookahead_distance)" />
+      <arg name="yawrate_k0"          value="$(arg yawrate_k0)" />
+      <arg name="yawrate_kd"          value="$(arg yawrate_kd)" />
+
   </include>
 
   <!-- Trajectory follower -->
   <include file="$(find marble_guidance)/launch/common/trajectory_follower.launch">
+
     <arg name="vehicle_name" value="$(arg vehicle_name)"/>
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)"/>
+    <arg name="max_yawrate"         value="$(arg max_yawrate)" />
+    <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
+    <arg name="lookahead_distance"  value="$(arg lookahead_distance)" />
+    <arg name="yawrate_k0"          value="$(arg yawrate_k0)" />
+    <arg name="yawrate_kd"          value="$(arg yawrate_kd)" />
+
   </include>
 
   <!-- Backup detection -->
-  <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
+  <!-- <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
+
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-  </include>
+
+  </include> -->
 
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
