@@ -10,8 +10,8 @@
     <remap from="motion_command_filter/cmd_vel"           to="/spot/cmd_vel"/>
     <remap from="motion_command_filter/estop_cmd"         to="estop"/>
     <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
-    <remap from="motion_command_filter/enable_backup"     to="fake_enable_backup"/>
-    <remap from="motion_command_filter/follow_traj"       to="fake_follow_traj"/>
+    <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>
+    <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
