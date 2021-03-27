@@ -68,13 +68,14 @@ include_directories(
 
 ## Declare a C++ library
 add_library(path_follower src/path_follower.cpp)
-#add_dependencies(path_follower ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(path_follower ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(path_follower ${catkin_LIBRARIES} )
 
 add_executable(path_follower_node src/path_follower_node.cpp)
 target_link_libraries(path_follower_node path_follower ${catkin_LIBRARIES})
 
 add_library(trajectory_follower src/trajectory_follower.cpp)
+add_dependencies(trajectory_follower ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(trajectory_follower ${catkin_LIBRARIES} )
 
 add_executable(trajectory_follower_node src/trajectory_follower_node.cpp)
