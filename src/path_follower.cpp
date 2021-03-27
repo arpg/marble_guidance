@@ -129,6 +129,7 @@ void pathFollower::computeControlCommands(){
 
   if(dist <= stopping_dist_){
     u_cmd_ = 0.0;
+    yawrate_cmd_ = 0.0;
   }
 
  //  ROS_INFO_THROTTLE(1,"Yawrate cmd: %f, Forward Speed cmd: %f", yawrate_cmd_, u_cmd_);

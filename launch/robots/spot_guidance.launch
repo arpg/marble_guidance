@@ -44,6 +44,7 @@
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+    <remap from="motion_command_filter/cmd_vel"           to="/spot/cmd_vel"/>
   </include>
 
 </launch>
