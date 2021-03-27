@@ -7,7 +7,7 @@
     <remap from="motion_command_filter/odometry_map"      to="odometry_map"/>
     <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
     <remap from="motion_command_filter/traj_motion_cmd"   to="trajectory_follower/motion_cmd"/>
-    <remap from="motion_command_filter/cmd_vel"           to="/spot/cmd_vel"/>
+    <remap from="motion_command_filter/cmd_vel"           to="cmd_vel"/>
     <remap from="motion_command_filter/estop_cmd"         to="estop"/>
     <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
     <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>
