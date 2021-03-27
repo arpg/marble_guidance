@@ -9,7 +9,7 @@
 
   <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
 
-    <remap from="path_follower/odometry"        to="odometry_map"/>
+    <remap from="path_follower/odometry"        to="odometry"/>
     <remap from="path_follower/path"            to="ma_goal_path"/>
     <remap from="path_follower/enable_backup"   to="enable_backup"/>
 

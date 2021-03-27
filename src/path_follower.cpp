@@ -32,7 +32,8 @@ void pathFollower::init() {
     vehicle_frame_ = vehicle_name_ + "/base_link";
 
     // control_commands_msg_.header.frame_id = vehicle_frame_;
-    lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
+    // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
+    lookahead_point_msg_.header.frame_id = "world";
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
