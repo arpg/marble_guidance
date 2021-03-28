@@ -6,6 +6,7 @@
   <arg name="lookahead_distance"    default="1.5"/>
   <arg name="yawrate_k0"            default="1.5"/>
   <arg name="yawrate_kd"            default="1.0"/>
+  <arg name="sim"                   default="false"/>
 
   <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
 
@@ -27,6 +28,7 @@
     <param name="enable_debug"                    value="1"/>
     <param name="enable_speed_regulation"         value="true"/>
     <param name="stopping_distance"               value="0.25"/>
+    <param name="sim_start"                       value="$(arg sim)"/>
 
   </node>
 

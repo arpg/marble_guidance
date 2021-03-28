@@ -28,6 +28,7 @@ void pathFollower::init() {
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
     pnh_.param("enable_debug", debug_, false);
     pnh_.param("stopping_distance", stopping_dist_, 0.25);
+    pnh_.param("sim", sim_start_, false);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
@@ -44,49 +45,64 @@ void pathFollower::init() {
 
 void pathFollower::findLookahead(nav_msgs::Path path){
 
-  // Find the lookahead point on the current path
-  vector<geometry_msgs::PoseStamped> poses = path.poses;
-  int l = poses.size();
+  if(sim_start_){
+    have_path_ = true;
+    float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
 
-  if(!l) return;
+    lookahead_pose_.position.x = 0.0;
+    lookahead_pose_.position.y = 0.0;
+    lookahead_pose_.position.z = 0.0;
 
-  float dist;
-  vector<float> dist_vec;
-  float min_dist = 1000;
-  int min_dist_index = 0;
-  // Find point on path closest to vehicle
-  //ROS_INFO("Current: %f, %f, %f, Path: %f, %f, %f, Dist: %f", current_pos_.x,  current_pos_.y, current_pos_.z,  poses[0].pose.position.x, poses[0].pose.position.y, poses[0].pose.position.z, dist);
-  for(int i=0; i<l; i++){
-    dist_vec.push_back(distanceTwoPoints3D(current_pos_, poses[i].pose.position));
-    if(dist_vec[i] < min_dist){
-      min_dist = dist_vec[i];
-      min_dist_index = i;
+    if(attractor_d < 0.25){
+      sim_start_ = false;
+      have_path_ = false;
+    }
+  } else{
+    // Find the lookahead point on the current path
+    vector<geometry_msgs::PoseStamped> poses = path.poses;
+    int l = poses.size();
+
+    if(!l) return;
+
+    float dist;
+    vector<float> dist_vec;
+    float min_dist = 1000;
+    int min_dist_index = 0;
+    // Find point on path closest to vehicle
+    //ROS_INFO("Current: %f, %f, %f, Path: %f, %f, %f, Dist: %f", current_pos_.x,  current_pos_.y, current_pos_.z,  poses[0].pose.position.x, poses[0].pose.position.y, poses[0].pose.position.z, dist);
+    for(int i=0; i<l; i++){
+      dist_vec.push_back(distanceTwoPoints3D(current_pos_, poses[i].pose.position));
+      if(dist_vec[i] < min_dist){
+        min_dist = dist_vec[i];
+        min_dist_index = i;
+      }
+    }
+
+    // Iterate forwards from this point to find lookahead
+    bool found_lookahead = false;
+    int i = min_dist_index;
+    end_path_ = false;
+    while(!found_lookahead){
+      // If the min distance is greater than the lookahead, we will not find a lookahead
+      if(min_dist > lookahead_dist_thresh_){
+        lookahead_pose_ = poses[i].pose;
+        found_lookahead = true;
+      }
+
+      if(dist_vec[i] >= lookahead_dist_thresh_){
+        lookahead_pose_ = poses[i].pose;
+        found_lookahead = true;
+      }
+      i++;
+      if(i == l){
+        // Reached the end of the path
+        lookahead_pose_ = poses[i].pose;
+        found_lookahead = true;
+        end_path_ = true;
+      }
     }
   }
 
-  // Iterate forwards from this point to find lookahead
-  bool found_lookahead = false;
-  int i = min_dist_index;
-  end_path_ = false;
-  while(!found_lookahead){
-    // If the min distance is greater than the lookahead, we will not find a lookahead
-    if(min_dist > lookahead_dist_thresh_){
-      lookahead_pose_ = poses[i].pose;
-      found_lookahead = true;
-    }
-
-    if(dist_vec[i] >= lookahead_dist_thresh_){
-      lookahead_pose_ = poses[i].pose;
-      found_lookahead = true;
-    }
-    i++;
-    if(i == l){
-      // Reached the end of the path
-      lookahead_pose_ = poses[i].pose;
-      found_lookahead = true;
-      end_path_ = true;
-    }
-  }
 
   // Publish the lookahead
   lookahead_point_msg_.header.stamp = ros::Time::now();
@@ -155,7 +171,7 @@ void pathFollower::publishMotionCmd(){
 void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
 
   current_path_ = *path_msg;
-  have_path_ = true;
+  if(!have_path_) have_path_ = true;
   last_path_time_ = ros::Time::now();
 
 }
