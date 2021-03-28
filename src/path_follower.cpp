@@ -28,7 +28,7 @@ void pathFollower::init() {
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
     pnh_.param("enable_debug", debug_, false);
     pnh_.param("stopping_distance", stopping_dist_, 0.25);
-    pnh_.param("sim", sim_start_, false);
+    pnh_.param("sim_start", sim_start_, false);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
@@ -48,6 +48,7 @@ void pathFollower::findLookahead(nav_msgs::Path path){
   if(sim_start_){
     have_path_ = true;
     float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
+    ROS_INFO_THROTTLE(.5,"dist: %f", attractor_d);
 
     lookahead_pose_.position.x = 0.0;
     lookahead_pose_.position.y = 0.0;
@@ -122,10 +123,11 @@ void pathFollower::computeControlCommands(){
   float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
   float dist = distanceTwoPoints3D(current_pos_, lookahead_pose_.position);
   //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
-
+  //ROS_INFO_THROTTLE(.5,"dist: %f", dist);
   if(abs(lookahead_angle_error) < turn_in_place_thresh_){
     // Use an exponential attractor to generate yawrate cmds
-    yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*dist), -yawrate_max_, yawrate_max_);
+    //yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*dist), -yawrate_max_, yawrate_max_);
+    yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -yawrate_max_, yawrate_max_);
     turn_in_place_ = false;
   } else {
     // Lookahead angle error is larger than threshold, so we should turn in place
