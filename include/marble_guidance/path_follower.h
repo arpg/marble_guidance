@@ -101,6 +101,7 @@ class pathFollower{
     marble_guidance::MotionCmd path_motion_cmd_msg_;
     double stopping_dist_;
 
+    bool sim_start_;
 
 };
 
