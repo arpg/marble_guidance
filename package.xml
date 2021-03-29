@@ -25,6 +25,7 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>pcl_conversions</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>lcd_pkg</build_depend>
 
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
