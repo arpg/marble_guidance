@@ -103,7 +103,7 @@ void pathFollower::computeControlCommands(){
   float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
   float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
   float dist = distanceTwoPoints3D(current_pos_, lookahead_pose_.position);
-  //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
+  ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
 
   if(abs(lookahead_angle_error) < turn_in_place_thresh_){
     // Use an exponential attractor to generate yawrate cmds

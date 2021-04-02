@@ -9,8 +9,9 @@
 
   <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
 
-    <remap from="path_follower/odometry"        to="odometry_map"/>
-    <remap from="path_follower/path"            to="ma_goal_path"/>
+    <remap from="path_follower/odometry"        to="odometry"/>
+    <!--<remap from="path_follower/path"            to="ma_goal_path"/>-->
+    <remap from="path_follower/path"            to="scan_plan_node/path_out"/>
     <remap from="path_follower/enable_backup"   to="enable_backup"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
@@ -20,6 +21,7 @@
     <param name="yawrate_kd"                      value="$(arg yawrate_kd)"/>
     <param name="max_yawrate"                     value="$(arg max_yawrate)"/>
     <param name="max_forward_speed"               value="$(arg max_forward_speed)"/>
+    <param name="yawrate_error_k"                 value="2.5"/>
     <param name="turn_in_place_thresh"            value="1.5"/>
     <param name="turn_in_place_yawrate"           value="0.5"/>
     <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
