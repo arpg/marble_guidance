@@ -40,15 +40,15 @@ void pathFollower::init() {
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
+    empty_path_ = false;
 
 }
 
-void pathFollower::findLookahead(nav_msgs::Path path){
+bool pathFollower::findLookahead(nav_msgs::Path path){
 
   if(sim_start_){
     have_path_ = true;
     float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
-    ROS_INFO_THROTTLE(.5,"dist: %f", attractor_d);
 
     lookahead_pose_.position.x = 0.0;
     lookahead_pose_.position.y = 0.0;
@@ -60,50 +60,28 @@ void pathFollower::findLookahead(nav_msgs::Path path){
     }
   } else{
     // Find the lookahead point on the current path
-    vector<geometry_msgs::PoseStamped> poses = path.poses;
-    int l = poses.size();
+    vector<geometry_msgs::PoseStamped> path_poses = path.poses;
+    int l = path_poses.size();
 
-    if(!l) return;
+    if(!l){
+      return false;
+    }
 
     float dist;
-    vector<float> dist_vec;
-    float min_dist = 1000;
-    int min_dist_index = 0;
-    // Find point on path closest to vehicle
-    //ROS_INFO("Current: %f, %f, %f, Path: %f, %f, %f, Dist: %f", current_pos_.x,  current_pos_.y, current_pos_.z,  poses[0].pose.position.x, poses[0].pose.position.y, poses[0].pose.position.z, dist);
-    for(int i=0; i<l; i++){
-      dist_vec.push_back(distanceTwoPoints3D(current_pos_, poses[i].pose.position));
-      if(dist_vec[i] < min_dist){
-        min_dist = dist_vec[i];
-        min_dist_index = i;
+    for(int i = l-1; i >= 0; i--){
+      dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
+      if(dist <= lookahead_distance_thresh_){
+        lookahead_pose_ = path_poses[i].pose;
+        return true;
+      }
+
+      if(i == 0){
+        ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
+        return false;
       }
     }
 
-    // Iterate forwards from this point to find lookahead
-    bool found_lookahead = false;
-    int i = min_dist_index;
-    end_path_ = false;
-    while(!found_lookahead){
-      // If the min distance is greater than the lookahead, we will not find a lookahead
-      if(min_dist > lookahead_dist_thresh_){
-        lookahead_pose_ = poses[i].pose;
-        found_lookahead = true;
-      }
-
-      if(dist_vec[i] >= lookahead_dist_thresh_){
-        lookahead_pose_ = poses[i].pose;
-        found_lookahead = true;
-      }
-      i++;
-      if(i == l){
-        // Reached the end of the path
-        lookahead_pose_ = poses[i].pose;
-        found_lookahead = true;
-        end_path_ = true;
-      }
-    }
   }
-
 
   // Publish the lookahead
   lookahead_point_msg_.header.stamp = ros::Time::now();
@@ -116,44 +94,46 @@ void pathFollower::computeControlCommands(){
 
   // YAWRATE COMMAND
   // Find the lookahead point
-  findLookahead(current_path_);
+  if(findLookahead(current_path_)){
 
-  // Create a yaw rate command from the heading error to the lookahead point
-  float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
-  float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
-  float dist = distanceTwoPoints3D(current_pos_, lookahead_pose_.position);
-  //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
-  //ROS_INFO_THROTTLE(.5,"dist: %f", dist);
-  if(abs(lookahead_angle_error) < turn_in_place_thresh_){
-    // Use an exponential attractor to generate yawrate cmds
-    //yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*dist), -yawrate_max_, yawrate_max_);
-    yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -yawrate_max_, yawrate_max_);
-    turn_in_place_ = false;
-  } else {
-    // Lookahead angle error is larger than threshold, so we should turn in place
-    //yawrate_cmd_ = turn_in_place_yawrate_;
-    yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -turn_in_place_yawrate_, turn_in_place_yawrate_);
-    turn_in_place_ = true;
-  }
+    // Create a yaw rate command from the heading error to the lookahead point
+    float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
+    float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
+    float dist = distanceTwoPoints3D(current_pos_, lookahead_pose_.position);
+    //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
+    //ROS_INFO_THROTTLE(.5,"dist: %f", dist);
+    if(abs(lookahead_angle_error) < turn_in_place_thresh_){
+      // Use an exponential attractor to generate yawrate cmds
+      //yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*dist), -yawrate_max_, yawrate_max_);
+      yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -yawrate_max_, yawrate_max_);
+      turn_in_place_ = false;
+    } else {
+      // Lookahead angle error is larger than threshold, so we should turn in place
+      //yawrate_cmd_ = turn_in_place_yawrate_;
+      yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -turn_in_place_yawrate_, turn_in_place_yawrate_);
+      turn_in_place_ = true;
+    }
 
-  // FORWARD SPEED COMMAND
-  if(!turn_in_place_){
-    // Slow down if we are approaching the lookahead point
-    u_cmd_ = sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  dist)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
-    if(enable_speed_regulation_){
-      u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
+    // FORWARD SPEED COMMAND
+    if(!turn_in_place_){
+      // Slow down if we are approaching the lookahead point
+      u_cmd_ = sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  dist)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
+      if(enable_speed_regulation_){
+        u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
+      }
+    } else {
+      u_cmd_ = 0.0;
+    }
+
+    if((empty_path_) || (dist <= stopping_dist_)){
+      u_cmd_ = 0.0;
+      yawrate_cmd_ = 0.0;
     }
   } else {
-    u_cmd_ = 0.0;
-  }
-
-  if(dist <= stopping_dist_){
+    ROS_INFO_THROTTLE(1.0,"Do not have a current lookahead point.");
     u_cmd_ = 0.0;
     yawrate_cmd_ = 0.0;
   }
-
- //  ROS_INFO_THROTTLE(1,"Yawrate cmd: %f, Forward Speed cmd: %f", yawrate_cmd_, u_cmd_);
-
 }
 
 void pathFollower::publishMotionCmd(){

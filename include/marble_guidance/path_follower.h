@@ -40,7 +40,7 @@ class pathFollower{
     void backupCb(const std_msgs::Bool bool_msg);
     void computeControlCommands();
     void publishMotionCmd();
-    void findLookahead(nav_msgs::Path path);
+    bool findLookahead(nav_msgs::Path path);
     float distanceTwoPoints3D(geometry_msgs::Point p1, geometry_msgs::Point p2);
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
@@ -102,6 +102,7 @@ class pathFollower{
     double stopping_dist_;
 
     bool sim_start_;
+    bool empty_path_;
 
 };
 
