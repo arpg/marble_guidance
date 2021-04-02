@@ -11,7 +11,7 @@
   <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
 
     <remap from="path_follower/odometry"        to="odometry"/>
-    <remap from="path_follower/path"            to="ma_goal_path"/>
+    <remap from="path_follower/path"            to="scan_plan_node/path_out"/>
     <remap from="path_follower/enable_backup"   to="enable_backup"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>

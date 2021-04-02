@@ -46,6 +46,7 @@ void pathFollower::init() {
 
 bool pathFollower::findLookahead(nav_msgs::Path path){
 
+  bool have_lookahead = false;
   if(sim_start_){
     have_path_ = true;
     float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
@@ -70,14 +71,15 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     float dist;
     for(int i = l-1; i >= 0; i--){
       dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
-      if(dist <= lookahead_distance_thresh_){
+      ROS_INFO("index: %d, dist: %f", i, dist);
+      if(dist <= lookahead_dist_thresh_){
         lookahead_pose_ = path_poses[i].pose;
-        return true;
+        have_lookahead = true;
       }
 
       if(i == 0){
         ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
-        return false;
+        have_lookahead = false;
       }
     }
 
@@ -87,6 +89,8 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
   lookahead_point_msg_.header.stamp = ros::Time::now();
   lookahead_point_msg_.point = lookahead_pose_.position;
   pub_lookahead_point_.publish(lookahead_point_msg_);
+
+  return have_lookahead;
 
 }
 

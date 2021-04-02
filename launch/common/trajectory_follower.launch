@@ -37,6 +37,6 @@
         <remap from="trajectory_generator/odometry_map" to="odometry_map"/>
     </node>
 
-    <include file="$(find lcd_pkg)/launch/lcd.launch" unless="$(arg enable_ground_truth)"/>
+    <!-- <include file="$(find lcd_pkg)/launch/lcd.launch" unless="$(arg enable_ground_truth)"/> -->
 
 </launch>
