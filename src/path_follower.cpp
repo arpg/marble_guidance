@@ -35,8 +35,8 @@ void pathFollower::init() {
 
     // control_commands_msg_.header.frame_id = vehicle_frame_;
     // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
-    lookahead_point_msg_.header.frame_id = "world";
-
+    lookahead_point_msg_.header.frame_id = "world"; 
+		lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
@@ -73,8 +73,17 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
       ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
+							if(i == 0){
+							   lookahead_pose_ = path_poses[i+1].pose;
+							} else {
         lookahead_pose_ = path_poses[i].pose;
+							}
         have_lookahead = true;
+				// Publish the lookahead
+				lookahead_point_msg_.header.stamp = ros::Time::now();
+				lookahead_point_msg_.point = lookahead_pose_.position;
+				pub_lookahead_point_.publish(lookahead_point_msg_);
+				return have_lookahead;
       }
 
       if(i == 0){
@@ -86,9 +95,9 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
   }
 
   // Publish the lookahead
-  lookahead_point_msg_.header.stamp = ros::Time::now();
-  lookahead_point_msg_.point = lookahead_pose_.position;
-  pub_lookahead_point_.publish(lookahead_point_msg_);
+  //lookahead_point_msg_.header.stamp = ros::Time::now();
+  //lookahead_point_msg_.point = lookahead_pose_.position;
+  //pub_lookahead_point_.publish(lookahead_point_msg_);
 
   return have_lookahead;
 
