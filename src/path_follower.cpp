@@ -35,7 +35,7 @@ void pathFollower::init() {
 
     // control_commands_msg_.header.frame_id = vehicle_frame_;
     // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
-    lookahead_point_msg_.header.frame_id = "world"; 
+    lookahead_point_msg_.header.frame_id = "world";
 		lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
@@ -73,11 +73,16 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
       ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
-							if(i == 0){
-							   lookahead_pose_ = path_poses[i+1].pose;
-							} else {
-        lookahead_pose_ = path_poses[i].pose;
-							}
+				if(i == 0){
+				   lookahead_pose_ = path_poses[i+1].pose;
+				} else {
+           lookahead_pose_ = path_poses[i].pose;
+				}
+
+        if(dist <= (stopping_dist_) && i != l){
+				   lookahead_pose_ = path_poses[i+1].pose;
+        }
+
         have_lookahead = true;
 				// Publish the lookahead
 				lookahead_point_msg_.header.stamp = ros::Time::now();
