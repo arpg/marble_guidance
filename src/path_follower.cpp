@@ -79,7 +79,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
            lookahead_pose_ = path_poses[i].pose;
 				}
 
-        if(dist <= (stopping_dist_) && i != l){
+        if(dist <= (2.0*stopping_dist_) && i != l){
 				   lookahead_pose_ = path_poses[i+1].pose;
         }
 
