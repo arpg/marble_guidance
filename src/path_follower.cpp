@@ -170,7 +170,7 @@ void pathFollower::computeControlCommands(){
 
   // Check the path point spacing
 //  if(new_path_){
-  if(!current_path_.poses.size()){
+  if(current_path_.poses.size()){
     	conditioned_path_ = conditionPath(current_path_);
       ROS_INFO_THROTTLE(1.0,"conditioned path: %d", conditioned_path_.poses.size());
   }
