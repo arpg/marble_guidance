@@ -6,6 +6,9 @@
 #include <iostream>
 #include <random>
 
+#include "spline/Bezier.h"
+#include "spline/BSpline.h"
+
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Float32.h>
@@ -63,6 +66,7 @@ class pathFollower{
     ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_lookahead_point_;
     ros::Publisher pub_motion_cmd_;
+    ros::Publisher pub_curvy_path_;
 
     // Variables
     string vehicle_name_;

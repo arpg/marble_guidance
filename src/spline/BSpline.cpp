@@ -1,4 +1,4 @@
-#include "BSpline.h"
+#include "spline/BSpline.h"
 #include <iostream>
 
 BSpline::BSpline()
@@ -40,4 +40,3 @@ Vector BSpline::interpolate(double u, const Vector& P0, const Vector& P1, const 
 
 	return point;
 }
-

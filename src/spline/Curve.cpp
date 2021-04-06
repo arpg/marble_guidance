@@ -1,4 +1,4 @@
-#include "Curve.h"
+#include "spline/Curve.h"
 
 Curve::Curve()
 : _steps(100)
@@ -29,7 +29,7 @@ void Curve::add_node(const Vector& node)
 {
 	_nodes.push_back(node);
 
-	
+
 
 	if(_nodes.size()==1)
 	{

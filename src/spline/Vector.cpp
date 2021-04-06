@@ -1,4 +1,4 @@
-#include "Vector.h"
+#include "spline/Vector.h"
 #include <cmath>
 #include <sstream>
 

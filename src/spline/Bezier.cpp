@@ -1,4 +1,4 @@
-#include "Bezier.h"
+#include "spline/Bezier.h"
 #include <iostream>
 
 Bezier::Bezier()
@@ -35,7 +35,7 @@ void Bezier::_on_way_point_added()
 		{
 			return;
 		}
-		
+
 		int pt=new_control_point_index - 2;
 		for(int i=0; i<=_steps; i++)
 		{
@@ -57,4 +57,3 @@ Vector Bezier::interpolate(double u, const Vector& P0, const Vector& P1, const V
 
 	return point;
 }
-

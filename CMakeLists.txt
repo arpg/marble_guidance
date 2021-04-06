@@ -67,9 +67,22 @@ include_directories(
 )
 
 ## Declare a C++ library
+
+add_library(spline_vector src/spline/Vector.cpp)
+target_link_libraries(spline_vector ${catkin_LIBRARIES} )
+
+add_library(curve src/spline/Curve.cpp)
+target_link_libraries(curve spline_vector ${catkin_LIBRARIES} )
+
+add_library(bezier_spline src/spline/Bezier.cpp)
+target_link_libraries(bezier_spline curve ${catkin_LIBRARIES} )
+
+add_library(bspline src/spline/BSpline.cpp)
+target_link_libraries(bspline curve ${catkin_LIBRARIES} )
+
 add_library(path_follower src/path_follower.cpp)
 add_dependencies(path_follower ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(path_follower ${catkin_LIBRARIES} )
+target_link_libraries(path_follower bezier_spline bspline ${catkin_LIBRARIES} )
 
 add_executable(path_follower_node src/path_follower_node.cpp)
 target_link_libraries(path_follower_node path_follower ${catkin_LIBRARIES})

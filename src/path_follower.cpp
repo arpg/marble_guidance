@@ -16,6 +16,7 @@ void pathFollower::init() {
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_lookahead_point_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead_point", 10);
     pub_motion_cmd_ = nh_.advertise<marble_guidance::MotionCmd>("motion_cmd", 10);
+    pub_curvy_path_ = nh_.advertise<nav_msgs::Path>("curvy_path", 10);
 
     pnh_.param("turn_in_place_thresh", turn_in_place_thresh_, 1.0);
     pnh_.param("turn_in_place_yawrate", turn_in_place_yawrate_, 1.0);
@@ -47,6 +48,26 @@ void pathFollower::init() {
 
     desired_path_point_spacing_ = .1;
     slow_down_dist_ = .75;
+
+    // Curve* curve = new Bezier();
+
+    // curve->set_steps(100); // generate 100 interpolate points between the last 4 way points
+    //
+    // curve->add_way_point(Vector(1, 1, 0));
+    // curve->add_way_point(Vector(2, 3, 0));
+    // curve->add_way_point(Vector(3, 2, 0));
+    // curve->add_way_point(Vector(4, 6, 0));
+    //
+    // int node_count = curve->node_count();
+    //
+    // ROS_INFO("node count: %d", node_count);
+    // double x, y, z;
+    // for(int i = 0; i < node_count; i++){
+    //     x = curve->node(i).x;
+    //     y = curve->node(i).y;
+    //     z = curve->node(i).z;
+    //     ROS_INFO("Point: (%f, %f, %f)", x, y, z);
+    // }
 
 }
 
@@ -80,31 +101,32 @@ void pathFollower::conditionPath(nav_msgs::Path path){
   int l = path_poses.size();
 
   conditioned_path_.poses.clear();
-  int c = 0;
-  conditioned_path_.poses.push_back(path_poses[c]); c++;
 
-  geometry_msgs::PoseStamped interp_pose;
-  float dist;
-
-  // Check path spacing and interpolate to add points if needed
-  for(int i = 1; i < l; i ++){
-    dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
-    //ROS_INFO("distance: %f", dist);
-    if(dist > desired_path_point_spacing_){
-      // If we are outside of the desired threshold, interpolate to add points
-      while(dist > desired_path_point_spacing_){
-        // interpolate
-        interp_pose.pose.position = interpolatePoints(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
-        interp_pose.pose.orientation = conditioned_path_.poses[c-1].pose.orientation;
-        conditioned_path_.poses.push_back(interp_pose); c++;
-        dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
-      }
-			// Add the next path point just so we don't miss any points
-      conditioned_path_.poses.push_back(path_poses[i]); c++;
-    } else {
-      conditioned_path_.poses.push_back(path_poses[i]); c++;
-    }
+  // Do a bezier curve interpolation of the path points
+  int num_points = l*20;
+  // Curve* curve = new Bezier();
+  Curve* curve = new BSpline();
+  curve->set_steps(num_points);
+  for(int i=0; i < l; i++){
+    curve->add_way_point(Vector(path_poses[i].pose.position.x, path_poses[i].pose.position.y, path_poses[i].pose.position.z));
   }
+
+  int num_nodes = curve->node_count();
+
+  // Convert from curve to path type
+  nav_msgs::Path curvy_path;
+  curvy_path.header.frame_id = "world";
+  geometry_msgs::PoseStamped pose;
+  for(int i=0; i < num_nodes; i++){
+    pose.pose.position.x = curve->node(i).x;
+    pose.pose.position.y = curve->node(i).y;
+    pose.pose.position.z = curve->node(i).z;
+    curvy_path.poses.push_back(pose);
+    conditioned_path_.poses.push_back(pose);
+  }
+
+  pub_curvy_path_.publish(curvy_path);
+
 }
 
 bool pathFollower::findLookahead(nav_msgs::Path path){
@@ -163,6 +185,7 @@ void pathFollower::computeControlCommands(){
 
   // Check the path point spacing and fill in large gaps
   if(current_path_.poses.size()){
+      ROS_INFO_THROTTLE(1.0,"Conditioning path");
     	conditionPath(current_path_);
   }
 
