@@ -78,14 +78,19 @@ nav_msgs::Path pathFollower::conditionPath(nav_msgs::Path path){
   int c = 0;
   conditioned_path_.poses.push_back(path_poses[c]); c++;
   geometry_msgs::PoseStamped interp_pose;
+  float dist;
+  ROS_INFO("Checking distance");
   for(int i = 0; i < l; i ++){
-    if(distanceTwoPoints3D(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position) > desired_path_point_spacing_){
-      while(distanceTwoPoints3D(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position) > desired_path_point_spacing_){
+    dist = distanceTwoPoints3D(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position);
+    ROS_INFO("distance: %f", dist);
+    if(dist > desired_path_point_spacing_){
+      while(dist > desired_path_point_spacing_){
         // interpolate
         interp_pose.pose.position = interpolatePoints(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position);
         interp_pose.pose.orientation = conditioned_path_.poses[c].pose.orientation;
         conditioned_path_.poses.push_back(interp_pose); c++;
-
+        dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i+1].pose.position);
+        ROS_INFO("distance: %f", dist);
       }
 			// Add the next path point just so we don't miss any points
       conditioned_path_.poses.push_back(path_poses[i+1]); c++;
