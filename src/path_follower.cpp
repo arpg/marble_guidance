@@ -42,14 +42,14 @@ void pathFollower::init() {
     enable_backup_ = false;
     empty_path_ = false;
     new_path_ = false;
-    conditioned_path.header.frame_id = "world";
+    conditioned_path_.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
     slow_down_dist_ = .5;
 
 }
 
-geometry_msgs::Point interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2){
+geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2){
   // Compute next point along the path
   // with desired linear spacing
   geometry_msgs::Point new_point;
@@ -69,7 +69,7 @@ geometry_msgs::Point interpolatePoints(geometry_msgs::Point point1, geometry_msg
   return new_point;
 }
 
-nav_msgs::Path conditionPath(nav_msgs::Path path){
+nav_msgs::Path pathFollower::conditionPath(nav_msgs::Path path){
   vector<geometry_msgs::PoseStamped> path_poses = path.poses;
   int l = path_poses.size();
   if(!l) return path;
