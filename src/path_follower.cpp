@@ -87,8 +87,10 @@ nav_msgs::Path pathFollower::conditionPath(nav_msgs::Path path){
         conditioned_path_.poses.push_back(interp_pose); c++;
 
       }
+			// Add the next path point just so we don't miss any points
+      conditioned_path_.poses.push_back(path_poses[i+1]); c++;
     } else {
-      conditioned_path_.poses.push_back(path_poses[i+1].pose); c++;
+      conditioned_path_.poses.push_back(path_poses[i+1]); c++;
     }
   }
 }
@@ -160,10 +162,12 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 void pathFollower::computeControlCommands(){
 
   // Check the path point spacing
-  if(new_path_){
-    conditioned_path_ = conditionPath(current_path_);
-    new_path_ = false;
-  }
+//  if(new_path_){
+  ROS_INFO_THROTTLE(1.0,"conditioning path");
+	conditioned_path_ = conditionPath(current_path_);
+  ROS_INFO_THROTTLE(1.0,"conditioned path: %d", conditioned_path_.poses.size());
+    //new_path_ = false;
+  //}
   // Find the lookahead point
   if(findLookahead(conditioned_path_)){
 
