@@ -45,6 +45,8 @@ class pathFollower{
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     bool ready();
+    geometry_msgs::Point interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2);
+    nav_msgs::Path conditionPath(nav_msgs::Path path);
 
   private:
     ros::NodeHandle nh_;
@@ -69,6 +71,7 @@ class pathFollower{
     bool debug_;
 
     nav_msgs::Path current_path_;
+    nav_msgs::Path conditioned_path_;
     ros::Time last_path_time_;
     bool end_path_;
     bool have_path_;
@@ -103,6 +106,9 @@ class pathFollower{
 
     bool sim_start_;
     bool empty_path_;
+    bool new_path_;
+
+    double desired_path_point_spacing_;
 
 };
 

@@ -41,7 +41,54 @@ void pathFollower::init() {
     have_odom_ = false;
     enable_backup_ = false;
     empty_path_ = false;
+    new_path_ = false;
+    conditioned_path.header.frame_id = "world";
 
+    desired_path_point_spacing_ = .1;
+
+}
+
+geometry_msgs::Point interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2){
+  // Compute next point along the path
+  // with desired linear spacing
+  geometry_msgs::Point new_point;
+  float dx, dy, dz, dist;
+
+  // Find the 3D unit vector that points from current point1 to point2
+  dx = point2.x - point1.x;
+  dy = point2.y - point1.y;
+  dz = point2.z - point1.z;
+  dist = distanceTwoPoints3D(point1, point2);
+
+  // Compute a new point along this unit vector at desired spacing
+  new_point.x = point1.x + (dx/dist)*desired_path_point_spacing_;
+  new_point.y = point1.y + (dy/dist)*desired_path_point_spacing_;
+  new_point.z = point1.z + (dz/dist)*desired_path_point_spacing_;
+
+  return new_point;
+}
+
+nav_msgs::Path conditionPath(nav_msgs::Path path){
+  vector<geometry_msgs::PoseStamped> path_poses = path.poses;
+  int l = path_poses.size();
+  if(!l) return path;
+  // Check path spacing and interpolate to add points if needed
+  conditioned_path_.poses.clear();
+  int c = 0;
+  conditioned_path_.poses.push_back(path_poses[c]);
+  geometry_msgs::PoseStamped interp_pose;
+  for(int i = 0; i < l; i ++){
+    while(distanceTwoPoints3D(conditioned_path_[c].pose.position, path_poses[i+1].pose.position) > desired_path_point_spacing_){
+      // interpolate
+      interp_pose.pose.position = interpolatePoints(conditioned_path_[c].pose.position, path_poses[i+1].pose.position);
+      interp_pose.pose.orientation = path_poses[c].pose.orientation;
+      conditioned_path_.push_back(interp_pose);
+      c++;
+    } else {
+      conditioned_path_.poses.push_back(path_poses[i+1].pose);
+      c++;
+    }
+  }
 }
 
 bool pathFollower::findLookahead(nav_msgs::Path path){
@@ -73,15 +120,15 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
       ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
-				if(i == 0){
-				   lookahead_pose_ = path_poses[i+1].pose;
-				} else {
-           lookahead_pose_ = path_poses[i].pose;
-				}
+				// if(i == 0){
+				//    lookahead_pose_ = path_poses[i+1].pose;
+				// } else {
+        //    lookahead_pose_ = path_poses[i].pose;
+				// }
 
-        if(dist <= (2.0*stopping_dist_) && i != l){
-				   lookahead_pose_ = path_poses[i+1].pose;
-        }
+        // if(dist <= (2.0*stopping_dist_) && i != l){
+				//    lookahead_pose_ = path_poses[i+1].pose;
+        // }
 
         have_lookahead = true;
 				// Publish the lookahead
@@ -110,9 +157,13 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 
 void pathFollower::computeControlCommands(){
 
-  // YAWRATE COMMAND
+  // Check the path point spacing
+  if(new_path_){
+    conditioned_path_ = conditionPath(current_path_);
+    new_path_ = false;
+  }
   // Find the lookahead point
-  if(findLookahead(current_path_)){
+  if(findLookahead(conditioned_path_)){
 
     // Create a yaw rate command from the heading error to the lookahead point
     float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
@@ -172,6 +223,7 @@ void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
 
   current_path_ = *path_msg;
   if(!have_path_) have_path_ = true;
+  new_path_ = true;
   last_path_time_ = ros::Time::now();
 
 }
