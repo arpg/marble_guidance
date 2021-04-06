@@ -65,7 +65,7 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
   //ROS_INFO("dist: %f, dx: %f, dy: %f, dz: %f", dist, dx, dy, dz);
   float scale = 1.0;
   if(dist < 2.0*desired_path_point_spacing_){
-    scale = 0.25;
+    scale = 0.5;
   }
 
   // Compute a new point along this unit vector at desired spacing
