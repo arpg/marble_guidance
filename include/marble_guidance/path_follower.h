@@ -46,7 +46,7 @@ class pathFollower{
     float sat(float num, float min_val, float max_val);
     bool ready();
     geometry_msgs::Point interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2);
-    nav_msgs::Path conditionPath(nav_msgs::Path path);
+    void conditionPath(nav_msgs::Path path);
 
   private:
     ros::NodeHandle nh_;

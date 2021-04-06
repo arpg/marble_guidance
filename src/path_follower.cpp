@@ -28,6 +28,7 @@ void pathFollower::init() {
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
     pnh_.param("enable_debug", debug_, false);
     pnh_.param("stopping_distance", stopping_dist_, 0.25);
+    pnh_.param("slow_down_distance", slow_down_dist_, 1.0);
     pnh_.param("sim_start", sim_start_, false);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
@@ -45,7 +46,7 @@ void pathFollower::init() {
     conditioned_path_.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
-    slow_down_dist_ = .5;
+    slow_down_dist_ = .75;
 
 }
 
@@ -60,44 +61,50 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
   dy = point2.y - point1.y;
   dz = point2.z - point1.z;
   dist = distanceTwoPoints3D(point1, point2);
-  ROS_INFO("dist: %f, dx: %f, dy: %f, dz: %f", dist, dx, dy, dz);
+  //ROS_INFO("Point1: (%f, %f, %f), Goal: (%f, %f, %f)", point1.x, point1.y, point1.z, point2.x, point2.y, point2.z);
+  //ROS_INFO("dist: %f, dx: %f, dy: %f, dz: %f", dist, dx, dy, dz);
+  float scale = 1.0;
+  if(dist < 2.0*desired_path_point_spacing_){
+    scale = 0.25;
+  }
 
   // Compute a new point along this unit vector at desired spacing
-  new_point.x = point1.x + (dx/dist)*desired_path_point_spacing_;
-  new_point.y = point1.y + (dy/dist)*desired_path_point_spacing_;
-  new_point.z = point1.z + (dz/dist)*desired_path_point_spacing_;
-  ROS_INFO("old: (%f, %f, %f), new: (%f, %f, %f)", point1.x, point1.y, point1.z, new_point.x, new_point.y, new_point.z);
+  new_point.x = point1.x + (dx/dist)*desired_path_point_spacing_*scale;
+  new_point.y = point1.y + (dy/dist)*desired_path_point_spacing_*scale;
+  new_point.z = point1.z + (dz/dist)*desired_path_point_spacing_*scale;
+//  ROS_INFO("Point1: (%f, %f, %f), New Point: (%f, %f, %f)", point1.x, point1.y, point1.z, new_point.x, new_point.y, new_point.z);
 
   return new_point;
 }
 
-nav_msgs::Path pathFollower::conditionPath(nav_msgs::Path path){
+void pathFollower::conditionPath(nav_msgs::Path path){
   vector<geometry_msgs::PoseStamped> path_poses = path.poses;
   int l = path_poses.size();
-  if(!l) return path;
+
   // Check path spacing and interpolate to add points if needed
   conditioned_path_.poses.clear();
   int c = 0;
+  //ROS_INFO("path[0]: (%f, %f, %f), odom: (%f, %f, %f)", path_poses[0].pose.position.x, path_poses[0].pose.position.y, path_poses[0].pose.position.z, current_pos_.x, current_pos_.y, current_pos_.z);
   conditioned_path_.poses.push_back(path_poses[c]); c++;
   geometry_msgs::PoseStamped interp_pose;
   float dist;
-  ROS_INFO("Checking distance");
-  for(int i = 0; i < l; i ++){
-    dist = distanceTwoPoints3D(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position);
+  //ROS_INFO("Checking distance");
+  for(int i = 1; i < l; i ++){
+    dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
     //ROS_INFO("distance: %f", dist);
     if(dist > desired_path_point_spacing_){
       while(dist > desired_path_point_spacing_){
         // interpolate
-        interp_pose.pose.position = interpolatePoints(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position);
-        interp_pose.pose.orientation = conditioned_path_.poses[c].pose.orientation;
+        interp_pose.pose.position = interpolatePoints(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
+        interp_pose.pose.orientation = conditioned_path_.poses[c-1].pose.orientation;
         conditioned_path_.poses.push_back(interp_pose); c++;
-        dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i+1].pose.position);
+        dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
         //ROS_INFO("distance: %f", dist);
       }
 			// Add the next path point just so we don't miss any points
-      conditioned_path_.poses.push_back(path_poses[i+1]); c++;
+      conditioned_path_.poses.push_back(path_poses[i]); c++;
     } else {
-      conditioned_path_.poses.push_back(path_poses[i+1]); c++;
+      conditioned_path_.poses.push_back(path_poses[i]); c++;
     }
   }
 }
@@ -123,24 +130,17 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     int l = path_poses.size();
 
     if(!l){
+      ROS_INFO_THROTTLE(1.0, "Empty path...");
       return false;
     }
 
     float dist;
     for(int i = l-1; i >= 0; i--){
       dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
-      ROS_INFO("index: %d, dist: %f", i, dist);
+      //ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
-				// if(i == 0){
-				//    lookahead_pose_ = path_poses[i+1].pose;
-				// } else {
-        //    lookahead_pose_ = path_poses[i].pose;
-				// }
 
-        // if(dist <= (2.0*stopping_dist_) && i != l){
-				//    lookahead_pose_ = path_poses[i+1].pose;
-        // }
-
+        lookahead_pose_ = path_poses[i].pose;
         have_lookahead = true;
 				// Publish the lookahead
 				lookahead_point_msg_.header.stamp = ros::Time::now();
@@ -157,25 +157,17 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 
   }
 
-  // Publish the lookahead
-  //lookahead_point_msg_.header.stamp = ros::Time::now();
-  //lookahead_point_msg_.point = lookahead_pose_.position;
-  //pub_lookahead_point_.publish(lookahead_point_msg_);
-
   return have_lookahead;
 
 }
 
 void pathFollower::computeControlCommands(){
 
-  // Check the path point spacing
-//  if(new_path_){
+  // Check the path point spacing and fill in large gaps
   if(current_path_.poses.size()){
-    	conditioned_path_ = conditionPath(current_path_);
-      ROS_INFO_THROTTLE(1.0,"conditioned path: %d", conditioned_path_.poses.size());
+    	conditionPath(current_path_);
   }
-    //new_path_ = false;
-  //}
+
   // Find the lookahead point
   if(findLookahead(conditioned_path_)){
 
@@ -183,16 +175,13 @@ void pathFollower::computeControlCommands(){
     float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
     float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
     float dist = distanceTwoPoints3D(current_pos_, lookahead_pose_.position);
-    //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
-    //ROS_INFO_THROTTLE(.5,"dist: %f", dist);
+
     if(abs(lookahead_angle_error) < turn_in_place_thresh_){
       // Use an exponential attractor to generate yawrate cmds
-      //yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error*exp(-yawrate_kd_*dist), -yawrate_max_, yawrate_max_);
       yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -yawrate_max_, yawrate_max_);
       turn_in_place_ = false;
     } else {
       // Lookahead angle error is larger than threshold, so we should turn in place
-      //yawrate_cmd_ = turn_in_place_yawrate_;
       yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -turn_in_place_yawrate_, turn_in_place_yawrate_);
       turn_in_place_ = true;
     }
@@ -200,7 +189,7 @@ void pathFollower::computeControlCommands(){
     // FORWARD SPEED COMMAND
     if(!turn_in_place_){
       // Slow down if we are approaching the lookahead point
-      u_cmd_ = sat(u_cmd_max_*(1 - sat( (slow_down_dist_ -  dist)/lookahead_dist_thresh_, 0.0, 1.0) ), 0.0, u_cmd_max_);
+      u_cmd_ = sat(u_cmd_max_*(1 - sat( (slow_down_dist_ -  dist)/slow_down_dist_, 0.0, 1.0) ), 0.0, u_cmd_max_);
       if(enable_speed_regulation_){
         u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
       }
@@ -262,9 +251,6 @@ void pathFollower::backupCb(const std_msgs::Bool bool_msg){
 
 bool pathFollower::ready(){
 
-  // if((ros::Time::now() - last_path_time_ > some_threshold) && end_path_){
-  //   have_path_ = false;
-  // }
   return have_path_ && have_odom_;
 
 }
