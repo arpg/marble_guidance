@@ -109,6 +109,7 @@ class pathFollower{
     bool new_path_;
 
     double desired_path_point_spacing_;
+    double slow_down_dist_;
 
 };
 

@@ -45,6 +45,7 @@ void pathFollower::init() {
     conditioned_path.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
+    slow_down_dist_ = .5;
 
 }
 
@@ -186,7 +187,7 @@ void pathFollower::computeControlCommands(){
     // FORWARD SPEED COMMAND
     if(!turn_in_place_){
       // Slow down if we are approaching the lookahead point
-      u_cmd_ = sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  dist)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
+      u_cmd_ = sat(u_cmd_max_*(1 - sat( (slow_down_dist_ -  dist)/lookahead_dist_thresh_, 0.0, 1.0) ), 0.0, u_cmd_max_);
       if(enable_speed_regulation_){
         u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
       }
