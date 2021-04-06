@@ -51,8 +51,7 @@ void pathFollower::init() {
 }
 
 geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2){
-  // Compute next point along the path
-  // with desired linear spacing
+  // Compute next point along the path with desired linear spacing
   geometry_msgs::Point new_point;
   float dx, dy, dz, dist;
 
@@ -61,8 +60,8 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
   dy = point2.y - point1.y;
   dz = point2.z - point1.z;
   dist = distanceTwoPoints3D(point1, point2);
-  //ROS_INFO("Point1: (%f, %f, %f), Goal: (%f, %f, %f)", point1.x, point1.y, point1.z, point2.x, point2.y, point2.z);
-  //ROS_INFO("dist: %f, dx: %f, dy: %f, dz: %f", dist, dx, dy, dz);
+
+  // Make sure we hit some minimum distance by introducing a scale
   float scale = 1.0;
   if(dist < 2.0*desired_path_point_spacing_){
     scale = 0.5;
@@ -72,7 +71,6 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
   new_point.x = point1.x + (dx/dist)*desired_path_point_spacing_*scale;
   new_point.y = point1.y + (dy/dist)*desired_path_point_spacing_*scale;
   new_point.z = point1.z + (dz/dist)*desired_path_point_spacing_*scale;
-//  ROS_INFO("Point1: (%f, %f, %f), New Point: (%f, %f, %f)", point1.x, point1.y, point1.z, new_point.x, new_point.y, new_point.z);
 
   return new_point;
 }
@@ -81,25 +79,25 @@ void pathFollower::conditionPath(nav_msgs::Path path){
   vector<geometry_msgs::PoseStamped> path_poses = path.poses;
   int l = path_poses.size();
 
-  // Check path spacing and interpolate to add points if needed
   conditioned_path_.poses.clear();
   int c = 0;
-  //ROS_INFO("path[0]: (%f, %f, %f), odom: (%f, %f, %f)", path_poses[0].pose.position.x, path_poses[0].pose.position.y, path_poses[0].pose.position.z, current_pos_.x, current_pos_.y, current_pos_.z);
   conditioned_path_.poses.push_back(path_poses[c]); c++;
+
   geometry_msgs::PoseStamped interp_pose;
   float dist;
-  //ROS_INFO("Checking distance");
+
+  // Check path spacing and interpolate to add points if needed
   for(int i = 1; i < l; i ++){
     dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
     //ROS_INFO("distance: %f", dist);
     if(dist > desired_path_point_spacing_){
+      // If we are outside of the desired threshold, interpolate to add points
       while(dist > desired_path_point_spacing_){
         // interpolate
         interp_pose.pose.position = interpolatePoints(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
         interp_pose.pose.orientation = conditioned_path_.poses[c-1].pose.orientation;
         conditioned_path_.poses.push_back(interp_pose); c++;
         dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i].pose.position);
-        //ROS_INFO("distance: %f", dist);
       }
 			// Add the next path point just so we don't miss any points
       conditioned_path_.poses.push_back(path_poses[i]); c++;
