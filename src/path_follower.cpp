@@ -60,11 +60,13 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
   dy = point2.y - point1.y;
   dz = point2.z - point1.z;
   dist = distanceTwoPoints3D(point1, point2);
+  ROS_INFO("dist: %f, dx: %f, dy: %f, dz: %f", dist, dx, dy, dz);
 
   // Compute a new point along this unit vector at desired spacing
   new_point.x = point1.x + (dx/dist)*desired_path_point_spacing_;
   new_point.y = point1.y + (dy/dist)*desired_path_point_spacing_;
   new_point.z = point1.z + (dz/dist)*desired_path_point_spacing_;
+  ROS_INFO("old: (%f, %f, %f), new: (%f, %f, %f)", point1.x, point1.y, point1.z, new_point.x, new_point.y, new_point.z);
 
   return new_point;
 }
@@ -82,7 +84,7 @@ nav_msgs::Path pathFollower::conditionPath(nav_msgs::Path path){
   ROS_INFO("Checking distance");
   for(int i = 0; i < l; i ++){
     dist = distanceTwoPoints3D(conditioned_path_.poses[c].pose.position, path_poses[i+1].pose.position);
-    ROS_INFO("distance: %f", dist);
+    //ROS_INFO("distance: %f", dist);
     if(dist > desired_path_point_spacing_){
       while(dist > desired_path_point_spacing_){
         // interpolate
@@ -90,7 +92,7 @@ nav_msgs::Path pathFollower::conditionPath(nav_msgs::Path path){
         interp_pose.pose.orientation = conditioned_path_.poses[c].pose.orientation;
         conditioned_path_.poses.push_back(interp_pose); c++;
         dist = distanceTwoPoints3D(conditioned_path_.poses[c-1].pose.position, path_poses[i+1].pose.position);
-        ROS_INFO("distance: %f", dist);
+        //ROS_INFO("distance: %f", dist);
       }
 			// Add the next path point just so we don't miss any points
       conditioned_path_.poses.push_back(path_poses[i+1]); c++;
@@ -168,9 +170,10 @@ void pathFollower::computeControlCommands(){
 
   // Check the path point spacing
 //  if(new_path_){
-  ROS_INFO_THROTTLE(1.0,"conditioning path");
-	conditioned_path_ = conditionPath(current_path_);
-  ROS_INFO_THROTTLE(1.0,"conditioned path: %d", conditioned_path_.poses.size());
+  if(!current_path_.poses.size()){
+    	conditioned_path_ = conditionPath(current_path_);
+      ROS_INFO_THROTTLE(1.0,"conditioned path: %d", conditioned_path_.poses.size());
+  }
     //new_path_ = false;
   //}
   // Find the lookahead point
