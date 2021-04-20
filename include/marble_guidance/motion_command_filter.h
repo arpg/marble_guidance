@@ -22,6 +22,7 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <marble_guidance/TrajList.h>
 #include <marble_guidance/MotionCmd.h>
+#include <marble_guidance/HuskySafety.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -50,7 +51,10 @@ class motionCommandFilter {
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
     void backupCmdCb(const std_msgs::BoolConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
+    void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
+    void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
     void filterCommands();
+    void lowpassFilterCommands(const geometry_msgs::Twist new_command);
     void publishCommands();
     void checkConnections();
     void determineMotionState();
@@ -86,6 +90,9 @@ class motionCommandFilter {
     ros::Subscriber sub_follow_traj_;
     ros::Subscriber sub_backup_cmd_;
     ros::Subscriber sub_estop_cmd_;
+    ros::Subscriber sub_husky_safety_;
+    ros::Subscriber sub_sf_command_;
+
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -154,6 +161,23 @@ class motionCommandFilter {
     double u_cmd_max_;
     bool enable_speed_regulation_;
     double yaw_error_k_;
+
+    // Husky Safety
+    bool enable_husky_safety_;
+    bool too_close_side_;
+    bool too_close_front_;
+    double close_side_speed_;
+
+    // Small field assist
+    bool enable_sf_assist_;
+    float sf_r_cmd_;
+    bool have_sf_r_cmd_;
+    ros::Time last_sf_cmd_time_;
+
+    // lowpassFilterCommands
+    float last_forward_speed_;
+    double u_cmd_lp_filt_const_up_;
+    double u_cmd_lp_filt_const_down_;
 
 
 }; // class SimpleNodeClass
