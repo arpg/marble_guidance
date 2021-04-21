@@ -1,13 +1,14 @@
 <launch>
 
   <arg name="vehicle_name" default="X1"/>
+  <arg name="cmd_vel_topic" default="cmd_vel"/>
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
     <remap from="motion_command_filter/odometry_map"      to="odometry"/>
     <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
     <remap from="motion_command_filter/traj_motion_cmd"   to="trajectory_follower/motion_cmd"/>
-    <remap from="motion_command_filter/cmd_vel"           to="/spot/cmd_vel"/>
+    <remap from="motion_command_filter/cmd_vel"           to="$(arg cmd_vel_topic)"/>
     <remap from="motion_command_filter/estop_cmd"         to="estop"/>
     <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
     <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>

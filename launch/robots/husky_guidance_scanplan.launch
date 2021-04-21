@@ -9,11 +9,7 @@
   <arg name="yawrate_k0"              default="0.5"/>
   <arg name="yawrate_kd"              default="1.0"/>
 
-  <arg name="path_topic"              default="scan_plan_node/path_out"/>
-  <!--<arg name="path_topic"               default="path_stitched"/> -->
-
-  <arg name="cmd_vel_topic"            default="controller0/cmd_vel"/>
-  <!-- <arg name="cmd_vel_topic"            default="cmd_vel"/> -->
+  <arg name="path_topic"               default="scan_plan_node/path_out"/>
 
   <!-- Path follower -->
   <include file="$(find marble_guidance)/launch/common/path_follower.launch">
@@ -52,7 +48,6 @@
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-    <arg name="cmd_vel_topic"    default="$(arg cmd_vel_topic)"/>
   </include>
 
 </launch>
