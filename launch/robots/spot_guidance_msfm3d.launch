@@ -9,10 +9,14 @@
   <arg name="yawrate_k0"              default="2.0"/>
   <arg name="yawrate_kd"              default="1.0"/>
 
+  <arg name="path_topic"               default="path_stitched"/> 
+
   <!-- Path follower -->
   <include file="$(find marble_guidance)/launch/common/path_follower.launch">
 
-      <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+			<arg name="path_topic"          value="$(arg path_topic)"/>
+
+      <arg name="vehicle_name"        value="$(arg vehicle_name)"/>
       <arg name="max_yawrate"         value="$(arg max_yawrate)" />
       <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
       <arg name="lookahead_distance"  value="$(arg lookahead_distance)" />
