@@ -28,7 +28,6 @@
 #include <sensor_msgs/Range.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-#include <lcd_pkg/PoseGraph.h>
 #include <tf/tf.h>
 #include <math.h>
 

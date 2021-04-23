@@ -21,7 +21,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   octomap_ros
   octomap_msgs
-  lcd_pkg
 )
 
 ## System dependencies are found with CMake's conventions

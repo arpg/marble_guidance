@@ -12,7 +12,7 @@ trajectoryFollower::trajectoryFollower(const ros::NodeHandle &node_handle,
 void trajectoryFollower::init() {
 
     sub_odom_ = nh_.subscribe("odometry_map", 1, &trajectoryFollower::odomCb, this);
-    sub_carto_traj_ = nh_.subscribe("cartographer_trajectory", 1, &trajectoryFollower::cartoTrajCb, this);
+    //sub_carto_traj_ = nh_.subscribe("cartographer_trajectory", 1, &trajectoryFollower::cartoTrajCb, this);
     sub_liosam_traj_ = nh_.subscribe("liosam_trajectory", 1, &trajectoryFollower::liosamTrajCb, this);
     sub_gt_traj_ = nh_.subscribe("ground_truth_trajectory", 1, &trajectoryFollower::gtTrajCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &trajectoryFollower::followTrajCb, this);
@@ -62,28 +62,28 @@ void trajectoryFollower::odomCb(const nav_msgs::OdometryConstPtr& odom_msg)
     //ROS_INFO_THROTTLE(1,"x: %f, y: %f", odom_point_.x, odom_point_.y);
 }
 
-void trajectoryFollower::cartoTrajCb(const lcd_pkg::PoseGraphConstPtr& msg)
-{
-
-    if(!have_traj_) have_traj_ = true;
-
-    //ROS_INFO_THROTTLE(1,"Received traj");
-    // e only need to do this when we can't plan home
-    uint32_t traj_list_size_ = msg->poseArray.size();
-
-    //ROS_INFO_THROTTLE(1, "Traj list size: %d,", traj_list_size_);
-    if(enable_lookahead_lookup_ && !have_current_traj_home_){
-        traj_list_points_.clear();
-        //ROS_INFO_THROTTLE(1, "traj_list_size: %d", traj_list_size_);
-        last_lookahead_index_ = traj_list_size_-1;
-        // Import trajectory list
-        for (int i = 0; i < traj_list_size_; i++){
-            traj_list_points_.push_back(msg->poseArray[i].pose.position);
-        }
-        //ROS_INFO("%d", last_lookahead_index_);
-        have_current_traj_home_ = true;
-      }
-}
+// void trajectoryFollower::cartoTrajCb(const lcd_pkg::PoseGraphConstPtr& msg)
+// {
+//
+//     if(!have_traj_) have_traj_ = true;
+//
+//     //ROS_INFO_THROTTLE(1,"Received traj");
+//     // e only need to do this when we can't plan home
+//     uint32_t traj_list_size_ = msg->poseArray.size();
+//
+//     //ROS_INFO_THROTTLE(1, "Traj list size: %d,", traj_list_size_);
+//     if(enable_lookahead_lookup_ && !have_current_traj_home_){
+//         traj_list_points_.clear();
+//         //ROS_INFO_THROTTLE(1, "traj_list_size: %d", traj_list_size_);
+//         last_lookahead_index_ = traj_list_size_-1;
+//         // Import trajectory list
+//         for (int i = 0; i < traj_list_size_; i++){
+//             traj_list_points_.push_back(msg->poseArray[i].pose.position);
+//         }
+//         //ROS_INFO("%d", last_lookahead_index_);
+//         have_current_traj_home_ = true;
+//       }
+// }
 
 void trajectoryFollower::liosamTrajCb(const nav_msgs::PathConstPtr& msg)
 {
