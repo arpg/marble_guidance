@@ -34,10 +34,7 @@ void pathFollower::init() {
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
 
-    // control_commands_msg_.header.frame_id = vehicle_frame_;
-    // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
     lookahead_point_msg_.header.frame_id = "world";
-		lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
@@ -47,7 +44,6 @@ void pathFollower::init() {
     conditioned_path_.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
-    slow_down_dist_ = .75;
 
 }
 
@@ -79,6 +75,10 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
 void pathFollower::conditionPath(nav_msgs::Path path){
   vector<geometry_msgs::PoseStamped> path_poses = path.poses;
   int l = path_poses.size();
+
+  for(int i=0; i < l; i++){
+    path_poses[i].pose.position.z = path_poses[i].pose.position.z - .62;
+  }
 
   conditioned_path_.poses.clear();
   int c = 0;
