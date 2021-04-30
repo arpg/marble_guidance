@@ -28,7 +28,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Range.h>
 #include <nav_msgs/Odometry.h>
-#include <lcd_pkg/PoseGraph.h>
+// #include <lcd_pkg/PoseGraph.h>
 #include <tf/tf.h>
 #include <math.h>
 #include <cv_bridge/cv_bridge.h>
@@ -121,7 +121,9 @@ class huskySafety {
     int left_corner_index_;
     bool too_close_side_;
     bool too_close_front_;
+    double max_sensor_dist_;
 
+    sensor_msgs::LaserScan scan_final_msg;
 
 }; // class SimpleNodeClass
 

@@ -4,7 +4,7 @@
   <arg name="enable_ground_truth"     default="false"/>
 
   <arg name="max_yawrate"             default="0.5"/>
-  <arg name="max_forward_speed"       default=".25"/>
+  <arg name="max_forward_speed"       default="1.25"/>
   <arg name="lookahead_distance"      default="1.0"/>
   <arg name="yawrate_k0"              default="0.5"/>
   <arg name="yawrate_kd"              default="1.0"/>
@@ -48,6 +48,11 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
 
   </include> -->
+
+  <!-- Husky safety -->
+  <include file="$(find marble_guidance)/launch/common/husky_safety.launch">
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+  </include>
 
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">

@@ -27,7 +27,7 @@
 #include <sensor_msgs/Range.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-#include <lcd_pkg/PoseGraph.h>
+// #include <lcd_pkg/PoseGraph.h>
 #include <marble_guidance/MotionCmd.h>
 #include <marble_guidance/TrajList.h>
 
@@ -46,7 +46,7 @@ class trajectoryFollower {
     void init();
 
     // FUNCTIONS //
-    void cartoTrajCb(const lcd_pkg::PoseGraphConstPtr& msg);
+    // void cartoTrajCb(const lcd_pkg::PoseGraphConstPtr& msg);
     void liosamTrajCb(const nav_msgs::PathConstPtr& msg);
     void gtTrajCb(const marble_guidance::TrajListConstPtr& msg);
     void odomCb(const nav_msgs::OdometryConstPtr& odom_msg);
@@ -72,7 +72,7 @@ class trajectoryFollower {
 
     // SUBSCRIBERS //
     ros::Subscriber sub_odom_;
-    ros::Subscriber sub_carto_traj_;
+    // ros::Subscriber sub_carto_traj_;
     ros::Subscriber sub_liosam_traj_;
     ros::Subscriber sub_gt_traj_;
     ros::Subscriber sub_task_;

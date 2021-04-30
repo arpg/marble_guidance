@@ -35,6 +35,7 @@ void motionCommandFilter::init() {
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
     pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
+    pnh_.param("enable_forward_speed_filtering", enable_fwd_speed_filtering_, false);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
 
     pnh_.param("fwd_speed_lp_filter_const_up", u_cmd_lp_filt_const_up_, .75);
@@ -49,10 +50,6 @@ void motionCommandFilter::init() {
     enable_backup_ = false;
 
     last_forward_speed_ = 0.0;
-
-    // have_traj_motion_cmd_ = false;
-    // have_path_motion_cmd_ = false;
-    // have_odom_ = false;
 
 }
 
@@ -374,7 +371,7 @@ void motionCommandFilter::publishCommands(){
   //   control_command_msg_stamped_.twist = control_command_msg_;
   //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
   // } else {
-    if(enable_husky_safety_){
+    if(enable_fwd_speed_filtering_){
       lowpassFilterCommands(control_command_msg_);
     }
     pub_cmd_vel_.publish(control_command_msg_);

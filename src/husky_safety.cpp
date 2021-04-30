@@ -14,8 +14,8 @@ void huskySafety::init() {
   // sub_odom_ = nh_.subscribe("odometry_map", 1, &huskySafety::odomCb, this);
   sub_rplidar_ = nh_.subscribe("rplidar_scan", 1, &huskySafety::rplidarScanCb, this);
 
-
-  pub_scan_final_ = nh_.advertise<std_msgs::Float32MultiArray>("scan_final", 1);
+  // pub_scan_final_ = nh_.advertise<std_msgs::Float32MultiArray>("scan_final", 1);
+  pub_scan_final_ = nh_.advertise<sensor_msgs::LaserScan>("scan_final", 1);
   pub_recon_wf_nearness_ = nh_.advertise<std_msgs::Float32MultiArray>("recon_wf_nearness", 1);
   pub_sf_nearness_ = nh_.advertise<std_msgs::Float32MultiArray>("sf_nearness", 1);
   pub_sf_nearness_cmd_ = nh_.advertise<std_msgs::Float32>("sf_nearness_cmd", 1);
@@ -23,11 +23,11 @@ void huskySafety::init() {
   //pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
   pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
-  pnh_.param("total_scan_points", total_scan_points_, 1440);
-  pnh_.param("num_scan_points", num_scan_points_, 720);
-  pnh_.param("scan_start_index", scan_start_index_, 360);
+  pnh_.param("total_scan_points", total_scan_points_, 720);
+  pnh_.param("num_scan_points", num_scan_points_, 360);
+  pnh_.param("scan_start_index", scan_start_index_, 180);
   pnh_.param("scan_frequency", scan_freq_, 10.0);
-  pnh_.param("scan_limit", scan_limit_, M_PI);
+  pnh_.param("scan_limit", scan_limit_, M_PI/2.0);
   pnh_.param("total_fourier_terms", total_fourier_terms_, 10);
   pnh_.param("num_small_field_fourier_terms", num_sf_fourier_terms_, 5);
   pnh_.param("small_field_threshold_gain", sf_thresh_k_, 3.0);
@@ -36,11 +36,17 @@ void huskySafety::init() {
   pnh_.param("small_field_psi_gain", sf_k_psi_, 1.0);
   pnh_.param("small_field_distance_gain", sf_k_d_, 1.0);
 
+  pnh_.param("front_safety_distance", f_dist_, 0.25);
+  pnh_.param("side_safety_distance", s_dist_, 0.35);
+
+
   have_scan_ = false;
   debug_ = true;
 
-  f_dist_ = 1.0;
-  s_dist_ = 1.0;
+  f_dist_ = 0.25;
+  s_dist_ = 0.35;
+
+  max_sensor_dist_ = 40.0;
 
   generateProjectionShapes();
   generateSafetyBoundary();
@@ -71,7 +77,10 @@ void huskySafety::generateSafetyBoundary(){
 
 
 void huskySafety::rplidarScanCb(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
-  if (!have_scan_) have_scan_ = true;
+  if (!have_scan_) {
+    have_scan_ = true;
+    scan_final_msg = *scan_msg;
+  }
 
   scan_ranges_.clear();
   scan_ranges_ = scan_msg->ranges;
@@ -103,10 +112,18 @@ void huskySafety::processLidarScan(){
     // -X direction
     scan_ranges_reformat_.clear();
     for (int i = total_scan_points_/2; i < total_scan_points_; i++) {
-      scan_ranges_reformat_.push_back(scan_ranges_[i]);
+      if(isinf(scan_ranges_[i])){
+        scan_ranges_reformat_.push_back(max_sensor_dist_);
+      } else{
+        scan_ranges_reformat_.push_back(scan_ranges_[i]);
+      }
     }
     for (int i = 0; i < total_scan_points_/2; i++){
+      if(isinf(scan_ranges_[i])){
+        scan_ranges_reformat_.push_back(max_sensor_dist_);
+      } else{
         scan_ranges_reformat_.push_back(scan_ranges_[i]);
+      }
     }
 
     // Trim the scan down if the entire scan is not being used
@@ -116,12 +133,18 @@ void huskySafety::processLidarScan(){
     }
 
     if(debug_){
-        std_msgs::Float32MultiArray scan_final_msg;
-        scan_final_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-        scan_final_msg.layout.dim[0].size = scan_ranges_final_.size();
-        scan_final_msg.data.clear();
-        scan_final_msg.data.insert(scan_final_msg.data.end(), scan_ranges_final_.begin(), scan_ranges_final_.end());
+        // std_msgs::Float32MultiArray scan_final_msg;
+        // scan_final_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+        // scan_final_msg.layout.dim[0].size = scan_ranges_final_.size();
+        // scan_final_msg.data.clear();
+        // scan_final_msg.data.insert(scan_final_msg.data.end(), scan_ranges_final_.begin(), scan_ranges_final_.end());
+        // pub_scan_final_.publish(scan_final_msg);
+
+        //sensor_msgs::LaserScan scan_final_msg;
+        scan_final_msg.header.frame_id = vehicle_name_ + "/rplidar_safety_link";
+        scan_final_msg.ranges = scan_ranges_final_;
         pub_scan_final_.publish(scan_final_msg);
+
     }
 
     // Convert to CVMat type for easier processing
@@ -132,15 +155,15 @@ void huskySafety::processLidarScan(){
     float cos_proj_arr[total_fourier_terms_ + 1][num_scan_points_];
     float sin_proj_arr[total_fourier_terms_ + 1][num_scan_points_];
 
+    cv::Mat cos_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, cos_proj_arr);
+    cv::Mat sin_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, sin_proj_arr);
+
     for (int i = 0; i < total_fourier_terms_; i++){
-      for (int j = 0; j < num_scan_points_; i++){
+      for (int j = 0; j < num_scan_points_; j++){
         cos_proj_arr[i][j] = cos_proj_array_[i][j];
         sin_proj_arr[i][j] = sin_proj_array_[i][j];
       }
     }
-
-    cv::Mat cos_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, cos_proj_arr);
-    cv::Mat sin_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, sin_proj_arr);
 
     // Extract WF Fourier coefficients from scan
     // Compute nearness
@@ -311,11 +334,13 @@ void huskySafety::checkSafetyBoundary(std::vector<float> scan){
   for(int i = 0; i < num_scan_points_; i++){
     // if((scan[i] < safety_boundary_[i]) && (scan[i] > h_sensor_min_noise_)){
       if((scan[i] < safety_boundary_[i])){
-      if((i <= left_corner_index_) || (i >= (num_scan_points_ - left_corner_index_))) {
-        too_close_side_ = true;
-      } else {
-        too_close_front_ = true;
-      }
+        if((i <= left_corner_index_) || (i >= (num_scan_points_ - left_corner_index_))) {
+          too_close_side_ = true;
+          //ROS_INFO("TOO CLOSE SIDE: index: %d, boundary: %f, val: %f", i, safety_boundary_[i], scan[i]);
+        } else {
+          too_close_front_ = true;
+          //ROS_INFO_THROTTLE(1.0,"TOO CLOSE FRONT");
+        }
     } else {
       too_close_front_ = too_close_front_ || too_close_front_;
       too_close_side_ = too_close_side_ || too_close_side_;

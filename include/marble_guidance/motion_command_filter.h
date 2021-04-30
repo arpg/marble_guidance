@@ -29,7 +29,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Range.h>
 #include <nav_msgs/Odometry.h>
-#include <lcd_pkg/PoseGraph.h>
+// #include <lcd_pkg/PoseGraph.h>
 #include <tf/tf.h>
 #include <math.h>
 
@@ -175,6 +175,7 @@ class motionCommandFilter {
     ros::Time last_sf_cmd_time_;
 
     // lowpassFilterCommands
+    bool enable_fwd_speed_filtering_;
     float last_forward_speed_;
     double u_cmd_lp_filt_const_up_;
     double u_cmd_lp_filt_const_down_;
