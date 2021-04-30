@@ -11,7 +11,7 @@ motionCommandFilter::motionCommandFilter(const ros::NodeHandle &node_handle,
 
 void motionCommandFilter::init() {
 
-    sub_odom_ = nh_.subscribe("odometry_map", 1, &motionCommandFilter::odomCb, this);
+    sub_odom_ = nh_.subscribe("odometry", 1, &motionCommandFilter::odomCb, this);
     sub_path_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::pathMotionCmdCb, this);
     sub_traj_motion_cmd_ = nh_.subscribe("traj_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
@@ -40,6 +40,8 @@ void motionCommandFilter::init() {
 
     pnh_.param("fwd_speed_lp_filter_const_up", u_cmd_lp_filt_const_up_, .75);
     pnh_.param("fwd_speed_lp_filter_const_down", u_cmd_lp_filt_const_up_, .95);
+
+    pnh_.param("close_side_speed", close_side_speed_, .1);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;

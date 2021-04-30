@@ -37,17 +37,41 @@ void pathFollower::init() {
     // control_commands_msg_.header.frame_id = vehicle_frame_;
     // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
     lookahead_point_msg_.header.frame_id = "world";
-		lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
-    empty_path_ = false;
     new_path_ = false;
     conditioned_path_.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
-    slow_down_dist_ = .75;
 
+}
+
+void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
+
+  current_path_ = *path_msg;
+  if(!have_path_) have_path_ = true;
+  new_path_ = true;
+  last_path_time_ = ros::Time::now();
+
+}
+
+void pathFollower::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
+
+  have_odom_ = true;
+  current_odom_ = *odom_msg;
+  current_pos_ = current_odom_.pose.pose.position;
+  geometry_msgs::Quaternion vehicle_quat_msg = current_odom_.pose.pose.orientation;
+  tf::Quaternion vehicle_quat_tf;
+  tf::quaternionMsgToTF(vehicle_quat_msg, vehicle_quat_tf);
+  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_heading_);
+
+  //ROS_INFO_THROTTLE(1, "Current Odom - X: %f, Y: %f, Z, %f, Heading: %f", current_pos_.x, current_pos_.y, current_pos_.z, current_heading_);
+
+}
+
+void pathFollower::backupCb(const std_msgs::Bool bool_msg){
+  enable_backup_ = bool_msg.data;
 }
 
 geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1, geometry_msgs::Point point2){
@@ -110,33 +134,33 @@ void pathFollower::conditionPath(nav_msgs::Path path){
 bool pathFollower::findLookahead(nav_msgs::Path path){
 
   bool have_lookahead = false;
-  if(sim_start_){
-    have_path_ = true;
-    float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
 
-    lookahead_pose_.position.x = 0.0;
-    lookahead_pose_.position.y = 0.0;
-    lookahead_pose_.position.z = 0.0;
+  // Find the lookahead point on the current path
+  vector<geometry_msgs::PoseStamped> path_poses = path.poses;
+  int l = path_poses.size();
 
-    if(attractor_d < 0.25){
-      sim_start_ = false;
-      have_path_ = false;
+  if(!l){
+    return false;
+  }
+
+  float dist;
+  for(int i = l-1; i >= 0; i--){
+    dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
+    //ROS_INFO("index: %d, dist: %f", i, dist);
+    if(dist <= lookahead_dist_thresh_){
+
+      lookahead_pose_ = path_poses[i].pose;
+      have_lookahead = true;
+			// Publish the lookahead
+			lookahead_point_msg_.header.stamp = ros::Time::now();
+			lookahead_point_msg_.point = lookahead_pose_.position;
+			pub_lookahead_point_.publish(lookahead_point_msg_);
+			return have_lookahead;
     }
-  } else{
-    // Find the lookahead point on the current path
-    vector<geometry_msgs::PoseStamped> path_poses = path.poses;
-    int l = path_poses.size();
 
-    if(!l){
-      ROS_INFO_THROTTLE(1.0, "Empty path...");
-      return false;
-    }
-
-    float dist;
-    for(int i = l-1; i >= 0; i--){
+    if(i == 0){
       dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
-      //ROS_INFO("index: %d, dist: %f", i, dist);
-      if(dist <= lookahead_dist_thresh_){
+      if(dist <= 2.0*lookahead_dist_thresh_){
 
         lookahead_pose_ = path_poses[i].pose;
         have_lookahead = true;
@@ -146,13 +170,9 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 				pub_lookahead_point_.publish(lookahead_point_msg_);
 				return have_lookahead;
       }
-
-      if(i == 0){
-        ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
-        have_lookahead = false;
-      }
+      ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
+      have_lookahead = false;
     }
-
   }
 
   return have_lookahead;
@@ -161,14 +181,31 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 
 void pathFollower::computeControlCommands(){
 
-  // Check the path point spacing and fill in large gaps
-  if(current_path_.poses.size()){
-    	conditionPath(current_path_);
+  bool have_lookahead = false;
+  if(sim_start_){
+    have_path_ = true;
+    float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
+
+    lookahead_pose_.position.x = 0.0;
+    lookahead_pose_.position.y = 0.0;
+    lookahead_pose_.position.z = 0.0;
+    have_lookahead = true;
+    if(attractor_d < 0.25){
+      sim_start_ = false;
+      have_path_ = false;
+    }
+  } else {
+    // Check the path point spacing and fill in large gaps
+    if(current_path_.poses.size()){
+      conditionPath(current_path_);
+      have_lookahead = findLookahead(conditioned_path_);
+    } else {
+      ROS_INFO_THROTTLE(1.0,"Empty path from planner.");
+    }
   }
 
   // Find the lookahead point
-  if(findLookahead(conditioned_path_)){
-
+  if(have_lookahead){
     // Create a yaw rate command from the heading error to the lookahead point
     float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
     float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
@@ -195,7 +232,7 @@ void pathFollower::computeControlCommands(){
       u_cmd_ = 0.0;
     }
 
-    if((empty_path_) || (dist <= stopping_dist_)){
+    if(dist <= stopping_dist_){
       u_cmd_ = 0.0;
       yawrate_cmd_ = 0.0;
     }
@@ -218,33 +255,6 @@ void pathFollower::publishMotionCmd(){
 
   pub_motion_cmd_.publish(path_motion_cmd_msg_);
 
-}
-
-void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
-
-  current_path_ = *path_msg;
-  if(!have_path_) have_path_ = true;
-  new_path_ = true;
-  last_path_time_ = ros::Time::now();
-
-}
-
-void pathFollower::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
-
-  have_odom_ = true;
-  current_odom_ = *odom_msg;
-  current_pos_ = current_odom_.pose.pose.position;
-  geometry_msgs::Quaternion vehicle_quat_msg = current_odom_.pose.pose.orientation;
-  tf::Quaternion vehicle_quat_tf;
-  tf::quaternionMsgToTF(vehicle_quat_msg, vehicle_quat_tf);
-  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_heading_);
-
-  //ROS_INFO_THROTTLE(1, "Current Odom - X: %f, Y: %f, Z, %f, Heading: %f", current_pos_.x, current_pos_.y, current_pos_.z, current_heading_);
-
-}
-
-void pathFollower::backupCb(const std_msgs::Bool bool_msg){
-  enable_backup_ = bool_msg.data;
 }
 
 bool pathFollower::ready(){

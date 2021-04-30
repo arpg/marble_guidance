@@ -22,6 +22,7 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <marble_guidance/TrajList.h>
 #include <marble_guidance/MotionCmd.h>
+#include <marble_guidance/HuskySafety.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -76,6 +77,7 @@ class huskySafety {
     ros::Publisher pub_recon_wf_nearness_;
     ros::Publisher pub_sf_nearness_;
     ros::Publisher pub_sf_nearness_cmd_;
+    ros::Publisher pub_safety_status_;
 
     // PARAMETERS
     string vehicle_name_;
@@ -123,7 +125,8 @@ class huskySafety {
     bool too_close_front_;
     double max_sensor_dist_;
 
-    sensor_msgs::LaserScan scan_final_msg;
+    sensor_msgs::LaserScan scan_final_msg_;
+    marble_guidance::HuskySafety husky_safety_msg_;
 
 }; // class SimpleNodeClass
 
