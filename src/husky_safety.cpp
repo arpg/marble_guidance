@@ -103,24 +103,25 @@ void huskySafety::processLidarScan(){
     // IMPLEMENT FROM NEARNESS CONTROLLER IF NEEDED
 
     // Reverse the scan
-    reverse(scan_ranges_.begin(), scan_ranges_.end());
+    vector<float> scan_ranges = scan_ranges_;
+    reverse(scan_ranges.begin(), scan_ranges.end());
 
     // Reformat the depth scan depending on the orientation of the scanner
     // This code handles the case where the rplidar case points in the
     // -X direction
     scan_ranges_reformat_.clear();
     for (int i = total_scan_points_/2; i < total_scan_points_; i++) {
-      if(isinf(scan_ranges_[i])){
+      if(isinf(scan_ranges[i])){
         scan_ranges_reformat_.push_back(max_sensor_dist_);
       } else{
-        scan_ranges_reformat_.push_back(scan_ranges_[i]);
+        scan_ranges_reformat_.push_back(scan_ranges[i]);
       }
     }
     for (int i = 0; i < total_scan_points_/2; i++){
-      if(isinf(scan_ranges_[i])){
+      if(isinf(scan_ranges[i])){
         scan_ranges_reformat_.push_back(max_sensor_dist_);
       } else{
-        scan_ranges_reformat_.push_back(scan_ranges_[i]);
+        scan_ranges_reformat_.push_back(scan_ranges[i]);
       }
     }
 
