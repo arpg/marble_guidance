@@ -126,7 +126,6 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 
     if(attractor_d < 0.5){
       sim_start_ = false;
-      have_path_ = false;
       have_lookahead = false;
     }
   } else{
@@ -157,6 +156,16 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       if(i == 0){
         ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
+        if(dist <= 2*.0*lookahead_dist_thresh_){
+
+          lookahead_pose_ = path_poses[i].pose;
+          have_lookahead = true;
+          // Publish the lookahead
+          lookahead_point_msg_.header.stamp = ros::Time::now();
+          lookahead_point_msg_.point = lookahead_pose_.position;
+          pub_lookahead_point_.publish(lookahead_point_msg_);
+          return have_lookahead;
+        }
       }
     }
 
