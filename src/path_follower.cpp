@@ -197,7 +197,7 @@ void pathFollower::computeControlCommands(){
       u_cmd_ = 0.0;
     }
 
-    if((empty_path_) || (dist <= stopping_dist_)){
+    if((empty_path_ && !sim_start_) || (dist <= stopping_dist_)){
       u_cmd_ = 0.0;
       yawrate_cmd_ = 0.0;
     }
