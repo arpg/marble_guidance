@@ -257,6 +257,14 @@ void pathFollower::backupCb(const std_msgs::Bool bool_msg){
 
 bool pathFollower::ready(){
 
+  if(!have_odom_){
+    ROS_INFO_THROTTLE(1.0, "Waiting for odom...");
+  }
+
+  if(!have_path_){
+    ROS_INFO_THROTTLE(1.0, "Waiting for path...");
+  }
+
   return have_path_ && have_odom_;
 
 }

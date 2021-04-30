@@ -11,11 +11,11 @@ int main(int argc, char** argv) {
     int rate;
     nh_private.param("loop_rate", rate, 10);
     ros::Rate loop_rate(rate);
-    
+
     while(ros::ok()){
 
         if(path_follower.ready()){
-          //ROS_INFO_THROTTLE(1,"Running...");
+          ROS_INFO_THROTTLE(1,"Running...");
           path_follower.computeControlCommands();
           path_follower.publishMotionCmd();
         }
