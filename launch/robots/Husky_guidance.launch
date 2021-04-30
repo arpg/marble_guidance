@@ -57,7 +57,7 @@
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-    <arg name="cmd_vel_topic"    default="$(arg cmd_vel_topic)"/>
+    <arg name="cmd_vel_topic"    value="$(arg cmd_vel_topic)"/>
   </include>
 
 </launch>
