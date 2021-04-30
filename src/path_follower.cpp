@@ -124,7 +124,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     lookahead_point_msg_.point = lookahead_pose_.position;
     pub_lookahead_point_.publish(lookahead_point_msg_);
 
-    if(attractor_d < 0.5){
+    if(attractor_d < 0.5 || new_path_){
       sim_start_ = false;
       have_lookahead = false;
     }
