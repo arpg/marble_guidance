@@ -43,6 +43,7 @@ void pathFollower::init() {
     enable_backup_ = false;
     empty_path_ = false;
     new_path_ = false;
+    sim_start_ = true;
     conditioned_path_.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
