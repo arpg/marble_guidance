@@ -117,10 +117,12 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     lookahead_pose_.position.x = 0.0;
     lookahead_pose_.position.y = 0.0;
     lookahead_pose_.position.z = 0.0;
+    have_lookahead = true;
 
     if(attractor_d < 0.25){
       sim_start_ = false;
       have_path_ = false;
+      have_lookahead = false;
     }
   } else{
     // Find the lookahead point on the current path
