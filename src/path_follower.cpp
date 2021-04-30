@@ -113,11 +113,15 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
   if(sim_start_){
     have_path_ = true;
     float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
-
+    ROS_INFO_THROTTLE(1.0,"Trying to go to origin...");
     lookahead_pose_.position.x = 0.0;
     lookahead_pose_.position.y = 0.0;
     lookahead_pose_.position.z = 0.0;
     have_lookahead = true;
+
+    lookahead_point_msg_.header.stamp = ros::Time::now();
+    lookahead_point_msg_.point = lookahead_pose_.position;
+    pub_lookahead_point_.publish(lookahead_point_msg_);
 
     if(attractor_d < 0.25){
       sim_start_ = false;
@@ -196,6 +200,7 @@ void pathFollower::computeControlCommands(){
     } else {
       u_cmd_ = 0.0;
     }
+    ROS_INFO_THROTTLE(1.0,"u_cmd: %f, yawrate_cmd: %f", u_cmd_, yawrate_cmd_);
 
     if((empty_path_ && !sim_start_) || (dist <= stopping_dist_)){
       u_cmd_ = 0.0;
