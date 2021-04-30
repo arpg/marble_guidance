@@ -8,8 +8,9 @@
   <arg name="lookahead_distance"      default="1.0"/>
   <arg name="yawrate_k0"              default="0.75"/>
   <arg name="yawrate_kd"              default="1.0"/>
-  <arg name="yaw_error_k"              default="1.5"/>
+  <arg name="yaw_error_k"             default="1.5"/>
   <arg name="sim"                     default="false"/>
+  <arg name="enable_husky_safety"     default="true"/>
 
   <arg name="path_topic"              default="scan_plan_node/path_out"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
@@ -53,6 +54,11 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
 
   </include> -->
+
+  <!-- Husky safety -->
+  <include file="$(find marble_guidance)/launch/common/husky_safety.launch">
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+  </include>
 
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">

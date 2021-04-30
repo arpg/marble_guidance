@@ -17,6 +17,8 @@ void motionCommandFilter::init() {
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
     sub_backup_cmd_ = nh_.subscribe("enable_backup", 1, &motionCommandFilter::backupCmdCb, this);
     sub_estop_cmd_ = nh_.subscribe("estop_cmd", 1, &motionCommandFilter::estopCmdCb, this);
+    sub_husky_safety_ = nh_.subscribe("husky_safety", 1, &motionCommandFilter::huskySafetyCb, this);
+    sub_sf_command_ = nh_.subscribe("sf_nearness_cmd", 1, &motionCommandFilter::sfNearnessCmdCb, this);
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
@@ -24,6 +26,8 @@ void motionCommandFilter::init() {
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("use_stamped_twist", use_stamped_twist_, false);
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
+    pnh_.param("enable_husky_safety", enable_husky_safety_, false);
+    pnh_.param("enable_small_field_assist", enable_sf_assist_, false);
 
     pnh_.param("yawrate_k0", yawrate_k0_, 1.0);
     pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
@@ -31,7 +35,11 @@ void motionCommandFilter::init() {
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
     pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
+    pnh_.param("enable_forward_speed_filtering", enable_fwd_speed_filtering_, false);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
+
+    pnh_.param("fwd_speed_lp_filter_const_up", u_cmd_lp_filt_const_up_, .75);
+    pnh_.param("fwd_speed_lp_filter_const_down", u_cmd_lp_filt_const_up_, .95);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
@@ -41,9 +49,7 @@ void motionCommandFilter::init() {
     enable_trajectory_following_ = false;
     enable_backup_ = false;
 
-    // have_traj_motion_cmd_ = false;
-    // have_path_motion_cmd_ = false;
-    // have_odom_ = false;
+    last_forward_speed_ = 0.0;
 
 }
 
@@ -88,6 +94,18 @@ void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
 void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
   ROS_INFO("Received estop command.");
   estop_cmd_ = msg->data;
+
+}
+
+void motionCommandFilter::huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg){
+  too_close_side_ = msg->too_close_side;
+  too_close_front_ = msg->too_close_front;
+}
+
+void motionCommandFilter::sfNearnessCmdCb(const std_msgs::Float32ConstPtr& msg){
+  if(!have_sf_r_cmd_) have_sf_r_cmd_ = true;
+  last_sf_cmd_time_ = ros::Time::now();
+  sf_r_cmd_ = msg->data;
 }
 
 void motionCommandFilter::checkConnections(){
@@ -113,6 +131,14 @@ void motionCommandFilter::checkConnections(){
     have_traj_motion_cmd_ = false;
     if(state_ != s_startup_){
       ROS_INFO_THROTTLE(1.0,"Error: Lost trajectory commands...");
+    }
+  }
+
+  // Check for small field commands
+  if((ros::Time::now() - last_sf_cmd_time_).toSec() > connection_failure_thresh_){
+    have_sf_r_cmd_ = false;
+    if(enable_sf_assist_){
+      ROS_INFO_THROTTLE(1.0,"Error: Lost SF assist command...");
     }
   }
 
@@ -242,11 +268,41 @@ void motionCommandFilter::filterCommands(){
     case motionCommandFilter::PATH_FOLLOW:
       ROS_INFO_THROTTLE(1.0,"Motion filter: path follow");
       control_command_msg_ = path_cmd_vel_;
+      if(enable_husky_safety_){
+        // Regulate vehicle forward speed based on safety limits
+        if(too_close_side_){
+          control_command_msg_.linear.x = close_side_speed_;
+        }
+        // Need to stop if we detect something in the front of the vehicle
+        if(too_close_front_){
+          control_command_msg_.linear.x = 0.0;
+        }
+      }
+      if(enable_sf_assist_){
+        if(have_sf_r_cmd_){
+          control_command_msg_.angular.z += sf_r_cmd_;
+        }
+      }
       break;
 
     case motionCommandFilter::TRAJ_FOLLOW:
       ROS_INFO_THROTTLE(1.0,"Motion filter: trajectory follow");
       control_command_msg_ = traj_cmd_vel_;
+      if(enable_husky_safety_){
+        // Regulate vehicle forward speed based on safety limits
+        if(too_close_side_){
+          control_command_msg_.linear.x = close_side_speed_;
+        }
+        // Need to stop if we detect something in the front of the vehicle
+        if(too_close_front_){
+          control_command_msg_.linear.x = 0.0;
+        }
+      }
+      if(enable_sf_assist_){
+        if(have_sf_r_cmd_){
+          control_command_msg_.angular.z += sf_r_cmd_;
+        }
+      }
       break;
 
     case motionCommandFilter::PATH_BACKUP:
@@ -315,10 +371,31 @@ void motionCommandFilter::publishCommands(){
   //   control_command_msg_stamped_.twist = control_command_msg_;
   //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
   // } else {
+    if(enable_fwd_speed_filtering_){
+      lowpassFilterCommands(control_command_msg_);
+    }
     pub_cmd_vel_.publish(control_command_msg_);
   // }
 
 }
+
+void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_command){
+  // We want different filters for speeding up vs slowing down
+  if(new_command.linear.x > last_forward_speed_){
+    control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
+    last_forward_speed_ = control_command_msg_.linear.x;
+  } else if (new_command.linear.x < last_forward_speed_){
+    control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
+    last_forward_speed_ = control_command_msg_.linear.x;
+  }
+
+  // Need to hard stop if commanded
+  if(new_command.linear.x == 0.0){
+    control_command_msg_.linear.x = 0.0;
+    last_forward_speed_ = 0.0;
+  }
+}
+
 
 float motionCommandFilter::dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2)
 {

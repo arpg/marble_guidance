@@ -21,10 +21,12 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   octomap_ros
   octomap_msgs
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package(OpenCV REQUIRED)
 
 find_package(octomap REQUIRED)
 
@@ -32,6 +34,7 @@ add_message_files(
    FILES
    MotionCmd.msg
    TrajList.msg
+   HuskySafety.msg
    )
 
  ## Generate added messages and services with any dependencies listed here
@@ -49,7 +52,7 @@ add_message_files(
 catkin_package(
 #   INCLUDE_DIRS include   ${OCTOMAP_INCLUDE_DIRS}
 #  LIBRARIES marble_guidance
-#   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros pcl_ros
+#   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros pcl_ros cv_bridge
    DEPENDS OCTOMAP
 )
 
@@ -63,6 +66,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${OCTOMAP_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -98,6 +102,12 @@ target_link_libraries(motion_command_filter ${catkin_LIBRARIES} )
 
 add_executable(motion_command_filter_node src/motion_command_filter_node.cpp)
 target_link_libraries(motion_command_filter_node motion_command_filter ${catkin_LIBRARIES})
+
+add_library(husky_safety src/husky_safety.cpp)
+target_link_libraries(husky_safety ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+add_executable(husky_safety_node src/husky_safety_node.cpp)
+target_link_libraries(husky_safety_node husky_safety ${catkin_LIBRARIES} )
 
 add_executable(tf2odom src/tf2odom.cpp)
 target_link_libraries(tf2odom ${catkin_LIBRARIES})
