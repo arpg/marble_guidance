@@ -49,7 +49,12 @@ void motionCommandFilter::init() {
     enable_trajectory_following_ = false;
     enable_backup_ = false;
 
+    too_close_side_ = false;
+    too_close_front_ = false;
+
     last_forward_speed_ = 0.0;
+
+    close_side_speed_ = 0.1;
 
 }
 
@@ -271,10 +276,12 @@ void motionCommandFilter::filterCommands(){
       if(enable_husky_safety_){
         // Regulate vehicle forward speed based on safety limits
         if(too_close_side_){
+          ROS_INFO_THROTTLE(1.0,"Too close on the side!");
           control_command_msg_.linear.x = close_side_speed_;
         }
         // Need to stop if we detect something in the front of the vehicle
         if(too_close_front_){
+          ROS_INFO_THROTTLE(1.0,"Too close in front!");
           control_command_msg_.linear.x = 0.0;
         }
       }
