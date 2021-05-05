@@ -37,7 +37,7 @@ void pathFollower::init() {
     // control_commands_msg_.header.frame_id = vehicle_frame_;
     // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
     lookahead_point_msg_.header.frame_id = "world";
-		lookahead_dist_thresh_ = 1.25;
+		//lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
@@ -180,6 +180,8 @@ void pathFollower::computeControlCommands(){
   // Check the path point spacing and fill in large gaps
   if(current_path_.poses.size()){
     	conditionPath(current_path_);
+  } else {
+    conditioned_path_.poses.clear();
   }
 
   // Find the lookahead point
