@@ -12,7 +12,8 @@
   <arg name="path_topic"              default="scan_plan_node/path_out"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
 
-  <arg name="cmd_vel_topic"            default="controller0/cmd_vel"/>
+  <!-- <arg name="cmd_vel_topic"            default="controller0/cmd_vel"/> -->
+  <arg name="cmd_vel_topic"           default="nav_vel"/>
   <!-- <arg name="cmd_vel_topic"            default="cmd_vel"/> -->
 
   <!-- Path follower -->

@@ -25,7 +25,7 @@
     <param name="lookahead_distance_threshold"    value="1.0"/>
     <param name="enable_speed_regulation"         value="true"/>
     <param name="enable_forward_speed_filtering"  value="true"/>
-    <param name="enable_husky_safety"             value="true"/>
+    <param name="enable_husky_safety"             value="false"/>
     <param name="yaw_error_k"                     value="1.0"/>
 
   </node>
