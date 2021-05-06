@@ -6,15 +6,14 @@
   <arg name="max_yawrate"             default="0.5"/>
   <arg name="max_forward_speed"       default="1.25"/>
   <arg name="lookahead_distance"      default="1.0"/>
-  <arg name="yawrate_k0"              default="0.75"/>
+  <arg name="yawrate_k0"              default="0.5"/>
   <arg name="yawrate_kd"              default="1.0"/>
-  <arg name="yaw_error_k"              default="1.5"/>
-  <arg name="sim"                     default="false"/>
 
   <arg name="path_topic"              default="scan_plan_node/path_out"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
 
-  <arg name="cmd_vel_topic"            default="controller0/cmd_vel"/>
+  <!-- <arg name="cmd_vel_topic"            default="controller0/cmd_vel"/> -->
+  <arg name="cmd_vel_topic"           default="nav_vel"/>
   <!-- <arg name="cmd_vel_topic"            default="cmd_vel"/> -->
 
   <!-- Path follower -->
@@ -28,9 +27,6 @@
       <arg name="lookahead_distance"  value="$(arg lookahead_distance)" />
       <arg name="yawrate_k0"          value="$(arg yawrate_k0)" />
       <arg name="yawrate_kd"          value="$(arg yawrate_kd)" />
-      <arg name="yaw_error_k"         value="$(arg yaw_error_k)"/>
-      <arg name="sim"                 value="$(arg sim)"/>
-
 
   </include>
 
@@ -54,10 +50,15 @@
 
   </include> -->
 
+  <!-- Husky safety -->
+  <!-- <include file="$(find marble_guidance)/launch/common/husky_safety.launch">
+    <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
+  </include> -->
+
   <!-- Motion comand filter -->
   <include file="$(find marble_guidance)/launch/common/motion_command_filter.launch">
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-    <arg name="cmd_vel_topic"    value="$(arg cmd_vel_topic)"/>
+    <arg name="cmd_vel_topic"    default="$(arg cmd_vel_topic)"/>
   </include>
 
 </launch>
