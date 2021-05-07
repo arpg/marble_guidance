@@ -156,7 +156,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       if(i == 0){
         ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
-        if(dist <= 2*.0*lookahead_dist_thresh_){
+        if(dist <= 2.0*lookahead_dist_thresh_){
 
           lookahead_pose_ = path_poses[i].pose;
           have_lookahead = true;
