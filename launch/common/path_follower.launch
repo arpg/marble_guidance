@@ -7,6 +7,7 @@
   <arg name="yawrate_k0"            default="1.0"/>
   <arg name="yawrate_kd"            default="1.0"/>
   <arg name="yaw_error_k"           default="1.0"/>
+
   <arg name="sim"                   default="false"/>
   <arg name="path_topic"            default="scan_plan_node/path_out"/>
 

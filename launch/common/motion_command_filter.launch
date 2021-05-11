@@ -2,11 +2,15 @@
 
   <arg name="vehicle_name" default="X1"/>
   <arg name="cmd_vel_topic" default="cmd_vel"/>
+<<<<<<< HEAD
   <arg name="enable_husky_safety"     default="true"/>
+=======
+  <arg name="enable_husky_safety" default="false"/>
+>>>>>>> feature/husky_safety_new
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
-    <remap from="motion_command_filter/odometry_map"      to="odometry"/>
+    <remap from="motion_command_filter/odometry"      to="odometry"/>
     <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
     <remap from="motion_command_filter/traj_motion_cmd"   to="trajectory_follower/motion_cmd"/>
     <remap from="motion_command_filter/cmd_vel"           to="$(arg cmd_vel_topic)"/>
@@ -14,21 +18,28 @@
     <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
     <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
+    <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
     <param name="connection_failure_thresh"       value="1.0"/>
 
-    <param name="yawrate_k0"                      value="1.0"/>
+    <param name="yawrate_k0"                      value="0.5"/>
     <param name="yawrate_kd"                      value="1.0"/>
     <param name="max_yawrate"                     value="0.75"/>
     <param name="max_forward_speed"               value="0.5"/>
-    <param name="lookahead_distance_threshold"    value="1.0"/>
+    <param name="lookahead_distance_threshold"    value="0.5"/>
     <param name="enable_speed_regulation"         value="true"/>
     <param name="enable_forward_speed_filtering"  value="true"/>
+<<<<<<< HEAD
 
     <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
     <param name="yaw_error_k"                     value="1.0"/>
+=======
+    <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
+    <param name="yaw_error_k"                     value="2.0"/>
+    <param name="close_side_speed"                value="0.1"/>
+>>>>>>> feature/husky_safety_new
 
   </node>
 

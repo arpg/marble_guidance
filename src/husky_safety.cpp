@@ -19,6 +19,7 @@ void huskySafety::init() {
   pub_recon_wf_nearness_ = nh_.advertise<std_msgs::Float32MultiArray>("recon_wf_nearness", 1);
   pub_sf_nearness_ = nh_.advertise<std_msgs::Float32MultiArray>("sf_nearness", 1);
   pub_sf_nearness_cmd_ = nh_.advertise<std_msgs::Float32>("sf_nearness_cmd", 1);
+  pub_safety_status_ = nh_.advertise<marble_guidance::HuskySafety>("safety_status", 1);
   // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
   //pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
@@ -76,7 +77,7 @@ void huskySafety::generateSafetyBoundary(){
 void huskySafety::rplidarScanCb(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
   if (!have_scan_) {
     have_scan_ = true;
-    scan_final_msg = *scan_msg;
+    scan_final_msg_ = *scan_msg;
   }
 
   scan_ranges_.clear();
@@ -102,24 +103,25 @@ void huskySafety::processLidarScan(){
     // IMPLEMENT FROM NEARNESS CONTROLLER IF NEEDED
 
     // Reverse the scan
-    reverse(scan_ranges_.begin(), scan_ranges_.end());
+    vector<float> scan_ranges = scan_ranges_;
+    reverse(scan_ranges.begin(), scan_ranges.end());
 
     // Reformat the depth scan depending on the orientation of the scanner
     // This code handles the case where the rplidar case points in the
     // -X direction
     scan_ranges_reformat_.clear();
     for (int i = total_scan_points_/2; i < total_scan_points_; i++) {
-      if(isinf(scan_ranges_[i])){
+      if(isinf(scan_ranges[i])){
         scan_ranges_reformat_.push_back(max_sensor_dist_);
       } else{
-        scan_ranges_reformat_.push_back(scan_ranges_[i]);
+        scan_ranges_reformat_.push_back(scan_ranges[i]);
       }
     }
     for (int i = 0; i < total_scan_points_/2; i++){
-      if(isinf(scan_ranges_[i])){
+      if(isinf(scan_ranges[i])){
         scan_ranges_reformat_.push_back(max_sensor_dist_);
       } else{
-        scan_ranges_reformat_.push_back(scan_ranges_[i]);
+        scan_ranges_reformat_.push_back(scan_ranges[i]);
       }
     }
 
@@ -138,9 +140,9 @@ void huskySafety::processLidarScan(){
         // pub_scan_final_.publish(scan_final_msg);
 
         //sensor_msgs::LaserScan scan_final_msg;
-        scan_final_msg.header.frame_id = vehicle_name_ + "/rplidar_safety_link";
-        scan_final_msg.ranges = scan_ranges_final_;
-        pub_scan_final_.publish(scan_final_msg);
+        scan_final_msg_.header.frame_id = vehicle_name_ + "/rplidar_safety_link";
+        scan_final_msg_.ranges = scan_ranges_final_;
+        pub_scan_final_.publish(scan_final_msg_);
 
     }
 
@@ -318,9 +320,14 @@ void huskySafety::determineSafetyState(){
     checkSafetyBoundary(scan_ranges_final_);
   } else {
     // We should probably stop because a critical sensor went down
+    // but for now just carry on
     too_close_front_ = false;
     too_close_side_ = false;
   }
+
+  husky_safety_msg_.too_close_side = too_close_side_;
+  husky_safety_msg_.too_close_front = too_close_front_;
+  pub_safety_status_.publish(husky_safety_msg_);
 
 }
 
