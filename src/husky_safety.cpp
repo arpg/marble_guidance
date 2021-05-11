@@ -43,9 +43,6 @@ void huskySafety::init() {
   have_scan_ = false;
   debug_ = true;
 
-  f_dist_ = 0.25;
-  s_dist_ = 0.35;
-
   max_sensor_dist_ = 40.0;
 
   generateProjectionShapes();

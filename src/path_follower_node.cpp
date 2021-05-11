@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     while(ros::ok()){
 
         if(path_follower.ready()){
-          ROS_INFO_THROTTLE(1,"Running...");
+          //ROS_INFO_THROTTLE(1,"Running...");
           path_follower.computeControlCommands();
           path_follower.publishMotionCmd();
         }

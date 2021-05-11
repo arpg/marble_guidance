@@ -4,8 +4,10 @@
 
   <node name="husky_safety_node" type= "husky_safety_node" pkg="marble_guidance" output="screen">
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
-    <param name="front_safety_distance"           value="0.25"/>
-    <param name="side_safety_distance"            value="0.35"/>
+  <!--  <param name="front_safety_distance"           value="0.25"/>
+   <param name="side_safety_distance"            value="0.35"/>     -->
+    <param name="front_safety_distance"           value="0.4"/>
+    <param name="side_safety_distance"            value="0.5"/>
     <remap from="husky_safety/rplidar_scan"        to="scan"/>
   </node>
 
