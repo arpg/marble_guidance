@@ -1,7 +1,5 @@
 <launch>
 
-  <!-- Launch the octomap to laserscan node -->
-  <!-- <include file="find"  -->
   <arg name="vehicle_name"   default="X1"/>
   <arg name="map_frame"      default="world"/>
   <arg name="resolution"     default=".15"/>
