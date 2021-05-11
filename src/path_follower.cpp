@@ -34,19 +34,16 @@ void pathFollower::init() {
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
 
-    // control_commands_msg_.header.frame_id = vehicle_frame_;
-    // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
     lookahead_point_msg_.header.frame_id = "world";
-		lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
     enable_backup_ = false;
     empty_path_ = false;
     new_path_ = false;
+    if(sim_start_) have_path_ = true;
     conditioned_path_.header.frame_id = "world";
 
     desired_path_point_spacing_ = .1;
-    slow_down_dist_ = .75;
 
 }
 
@@ -78,6 +75,10 @@ geometry_msgs::Point pathFollower::interpolatePoints(geometry_msgs::Point point1
 void pathFollower::conditionPath(nav_msgs::Path path){
   vector<geometry_msgs::PoseStamped> path_poses = path.poses;
   int l = path_poses.size();
+
+  for(int i=0; i < l; i++){
+    path_poses[i].pose.position.z = path_poses[i].pose.position.z - .62;
+  }
 
   conditioned_path_.poses.clear();
   int c = 0;
@@ -113,14 +114,19 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
   if(sim_start_){
     have_path_ = true;
     float attractor_d = sqrt(pow((current_pos_.x), 2) + pow((current_pos_.y), 2));
-
+    ROS_INFO_THROTTLE(1.0,"Trying to go to origin... dist: %f", attractor_d);
     lookahead_pose_.position.x = 0.0;
     lookahead_pose_.position.y = 0.0;
     lookahead_pose_.position.z = 0.0;
+    have_lookahead = true;
 
-    if(attractor_d < 0.25){
+    lookahead_point_msg_.header.stamp = ros::Time::now();
+    lookahead_point_msg_.point = lookahead_pose_.position;
+    pub_lookahead_point_.publish(lookahead_point_msg_);
+
+    if(attractor_d < 0.5 || new_path_){
       sim_start_ = false;
-      have_path_ = false;
+      have_lookahead = false;
     }
   } else{
     // Find the lookahead point on the current path
@@ -150,6 +156,16 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       if(i == 0){
         ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
+        if(dist <= 2.0*lookahead_dist_thresh_){
+
+          lookahead_pose_ = path_poses[i].pose;
+          have_lookahead = true;
+          // Publish the lookahead
+          lookahead_point_msg_.header.stamp = ros::Time::now();
+          lookahead_point_msg_.point = lookahead_pose_.position;
+          pub_lookahead_point_.publish(lookahead_point_msg_);
+          return have_lookahead;
+        }
       }
     }
 
@@ -164,6 +180,8 @@ void pathFollower::computeControlCommands(){
   // Check the path point spacing and fill in large gaps
   if(current_path_.poses.size()){
     	conditionPath(current_path_);
+  } else {
+    conditioned_path_.poses.clear();
   }
 
   // Find the lookahead point
@@ -194,8 +212,9 @@ void pathFollower::computeControlCommands(){
     } else {
       u_cmd_ = 0.0;
     }
+    ROS_INFO_THROTTLE(1.0,"u_cmd: %f, yawrate_cmd: %f", u_cmd_, yawrate_cmd_);
 
-    if((empty_path_) || (dist <= stopping_dist_)){
+    if((empty_path_ && !sim_start_) || (dist <= stopping_dist_)){
       u_cmd_ = 0.0;
       yawrate_cmd_ = 0.0;
     }
@@ -248,6 +267,14 @@ void pathFollower::backupCb(const std_msgs::Bool bool_msg){
 }
 
 bool pathFollower::ready(){
+
+  if(!have_odom_){
+    ROS_INFO_THROTTLE(1.0, "Waiting for odom...");
+  }
+
+  if(!have_path_){
+    ROS_INFO_THROTTLE(1.0, "Waiting for path...");
+  }
 
   return have_path_ && have_odom_;
 

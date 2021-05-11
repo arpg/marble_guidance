@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     int rate;
     nh_private.param("loop_rate", rate, 10);
     ros::Rate loop_rate(rate);
-    
+
     while(ros::ok()){
 
         if(path_follower.ready()){
