@@ -48,6 +48,7 @@ void motionCommandFilter::init() {
     estop_cmd_ = true;
     enable_trajectory_following_ = false;
     enable_backup_ = false;
+    enable_sf_assist_ = false;
 
     too_close_side_ = false;
     too_close_front_ = false;
