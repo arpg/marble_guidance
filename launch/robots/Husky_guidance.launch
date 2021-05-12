@@ -51,9 +51,7 @@
 
   <!-- Backup detection -->
   <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
-
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-
   </include>
 
   <!-- Husky safety -->
@@ -66,6 +64,8 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
     <arg name="cmd_vel_topic"    value="$(arg cmd_vel_topic)"/>
     <arg name="enable_husky_safety"     value="$(arg enable_husky_safety)"/>
+    <arg name="max_yawrate"         value="$(arg max_yawrate)" />
+    <arg name="yaw_error_k"         value="$(arg yaw_error_k)" />
 
   </include>
 
