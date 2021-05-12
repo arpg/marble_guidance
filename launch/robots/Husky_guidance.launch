@@ -50,11 +50,11 @@
   </include>
 
   <!-- Backup detection -->
-  <!-- <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
+  <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
 
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
 
-  </include> -->
+  </include>
 
   <!-- Husky safety -->
   <include file="$(find marble_guidance)/launch/common/husky_safety.launch" if="$(arg enable_husky_safety)">
