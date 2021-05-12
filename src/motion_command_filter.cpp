@@ -38,8 +38,8 @@ void motionCommandFilter::init() {
     pnh_.param("fwd_speed_lp_filter_const_up", u_cmd_lp_filt_const_up_, .75);
     pnh_.param("fwd_speed_lp_filter_const_down", u_cmd_lp_filt_const_up_, .95);
 
-    pnh_.param("yawrate_lp_filter_const_up", yaw_rate_cmd_lp_filt_const_up_, .85);
-    pnh_.param("yawrate_lp_filter_const_down", yaw_rate_cmd_lp_filt_const_down_, .95);
+    pnh_.param("yaw_rate_lp_filter_const_up", yaw_rate_cmd_lp_filt_const_up_, .85);
+    pnh_.param("yaw_rate_lp_filter_const_down", yaw_rate_cmd_lp_filt_const_down_, .95);
 
     pnh_.param("close_side_speed", close_side_speed_, .1);
 
