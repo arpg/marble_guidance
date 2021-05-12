@@ -392,13 +392,23 @@ void motionCommandFilter::publishCommands(){
 
 void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_command){
   // We want different filters for speeding up vs slowing down
-  if(new_command.linear.x > last_forward_speed_){
-    control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
-    last_forward_speed_ = control_command_msg_.linear.x;
-  } else if (new_command.linear.x < last_forward_speed_){
-    control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
-    last_forward_speed_ = control_command_msg_.linear.x;
-  }
+    bool backup = ( state_ == motionCommandFilter::PATH_BACKUP || state_ == motionCommandFilter::TRAJ_BACKUP);
+
+    if(new_command.linear.x > last_forward_speed_){
+      if(!backup){
+        control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
+      } else {
+        control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
+      }
+      last_forward_speed_ = control_command_msg_.linear.x;
+    } else if (new_command.linear.x < last_forward_speed_){
+      if(!backup){
+        control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
+      } else {
+        control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
+      }
+      last_forward_speed_ = control_command_msg_.linear.x;
+    }
 
   if(enable_yaw_rate_filtering_){
     if(new_command.angular.z > last_yaw_rate_){
