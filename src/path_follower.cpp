@@ -209,7 +209,7 @@ void pathFollower::computeControlCommands(){
     } else {
       u_cmd_ = 0.0;
     }
-
+    //ROS_INFO_THROTTLE(.5,"dist: %f", dist);
     if((empty_path_) || (dist <= stopping_dist_)){
       u_cmd_ = 0.0;
       yawrate_cmd_ = 0.0;
