@@ -27,7 +27,7 @@
     <param name="yawrate_kd"                      value="1.0"/>
     <param name="max_yawrate"                     value="$(arg max_yawrate)"/>
     <param name="max_backward_speed"              value="0.5"/>
-    <param name="backup_lookahead_dist"           value="0.5"/>
+    <param name="backup_lookahead_dist"           value="0.75"/>
     <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
 
     <!-- Motion filter parameters -->

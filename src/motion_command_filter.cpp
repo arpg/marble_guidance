@@ -363,8 +363,8 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   // FORWARD SPEED COMMAND
   // Slow down if we are approaching the lookahead point
-  u_cmd = -sat(u_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.0, u_back_cmd_max_);
-  u_cmd = sat(u_cmd + yaw_error_k_*abs(lookahead_angle_error), -u_back_cmd_max_, 0.0);
+  u_cmd = -sat(u_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.05, u_back_cmd_max_);
+  u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_back_cmd_max_, -.05);
 
   geometry_msgs::Twist backup_cmd;
   backup_cmd.linear.x = u_cmd;
@@ -393,19 +393,20 @@ void motionCommandFilter::publishCommands(){
 void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_command){
   // We want different filters for speeding up vs slowing down
     bool backup = ( state_ == motionCommandFilter::PATH_BACKUP || state_ == motionCommandFilter::TRAJ_BACKUP);
-
+    float back_const_up_ = .75;
+    float back_const_down_ = .95;
     if(new_command.linear.x > last_forward_speed_){
       if(!backup){
         control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
       } else {
-        control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
+        control_command_msg_.linear.x = back_const_down_*last_forward_speed_ + (1.0 - back_const_down_)*new_command.linear.x;
       }
       last_forward_speed_ = control_command_msg_.linear.x;
     } else if (new_command.linear.x < last_forward_speed_){
       if(!backup){
         control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
       } else {
-        control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
+        control_command_msg_.linear.x = back_const_up_*last_forward_speed_ + (1.0 - back_const_up_)*new_command.linear.x;
       }
       last_forward_speed_ = control_command_msg_.linear.x;
     }
