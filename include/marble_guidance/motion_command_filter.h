@@ -180,6 +180,8 @@ class motionCommandFilter {
     double u_cmd_lp_filt_const_up_;
     double u_cmd_lp_filt_const_down_;
 
+    float min_lidar_dist_;
+
 
 }; // class SimpleNodeClass
 

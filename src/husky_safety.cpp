@@ -44,6 +44,7 @@ void huskySafety::init() {
   debug_ = true;
 
   max_sensor_dist_ = 40.0;
+  min_dist_ = max_sensor_dist_;
 
   generateProjectionShapes();
   generateSafetyBoundary();
@@ -324,6 +325,7 @@ void huskySafety::determineSafetyState(){
 
   husky_safety_msg_.too_close_side = too_close_side_;
   husky_safety_msg_.too_close_front = too_close_front_;
+  husky_safety_msg_.min_dist = min_dist_;
 
   pub_safety_status_.publish(husky_safety_msg_);
 
@@ -333,8 +335,13 @@ void huskySafety::checkSafetyBoundary(std::vector<float> scan){
   too_close_front_ = false;
   too_close_side_ = false;
 
+  float min_dist_thresh = 1.0;
+  min_dist_ = max_sensor_dist_;
   for(int i = 0; i < num_scan_points_; i++){
     // if((scan[i] < safety_boundary_[i]) && (scan[i] > h_sensor_min_noise_)){
+      if(scan[i] < min_dist_thresh){
+        min_dist_= scan[i];
+      }
       if((scan[i] < safety_boundary_[i])){
         if((i <= left_corner_index_) || (i >= (num_scan_points_ - left_corner_index_))) {
           too_close_side_ = true;

@@ -128,6 +128,9 @@ class huskySafety {
     sensor_msgs::LaserScan scan_final_msg_;
     marble_guidance::HuskySafety husky_safety_msg_;
 
+    float min_dist_;
+    float min_lidar_dist_;
+
 }; // class SimpleNodeClass
 
 }  // namespace demo

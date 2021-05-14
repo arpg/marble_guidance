@@ -108,6 +108,7 @@ void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
 void motionCommandFilter::huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg){
   too_close_side_ = msg->too_close_side;
   too_close_front_ = msg->too_close_front;
+  min_lidar_dist_ = msg->min_dist;
 }
 
 void motionCommandFilter::sfNearnessCmdCb(const std_msgs::Float32ConstPtr& msg){
@@ -277,6 +278,11 @@ void motionCommandFilter::filterCommands(){
       ROS_INFO_THROTTLE(1.0,"Motion filter: path follow");
       control_command_msg_ = path_cmd_vel_;
       if(enable_husky_safety_){
+
+        if(min_lidar_dist_ < 1.0){
+          ROS_INFO_THROTTLE(1.0,"Getting close to obstacle");
+          control_command_msg_.linear.x = sat(path_cmd_vel_.linear.x*pow(min_lidar_dist_,2), 0.1, u_cmd_max_);
+        }
         // Regulate vehicle forward speed based on safety limits
         if(too_close_side_){
           ROS_INFO_THROTTLE(1.0,"Too close on the side!");
@@ -287,6 +293,7 @@ void motionCommandFilter::filterCommands(){
           ROS_INFO_THROTTLE(1.0,"Too close in front!");
           control_command_msg_.linear.x = 0.0;
         }
+
       }
       if(enable_sf_assist_){
         if(have_sf_r_cmd_){
@@ -361,10 +368,11 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   // FORWARD SPEED COMMAND
   // Slow down if we are approaching the lookahead point
-  u_cmd = -sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  distance)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
   if(enable_speed_regulation_){
-    u_cmd = sat(u_cmd + yaw_error_k_*abs(lookahead_angle_error), -u_cmd_max_, 0.0);
+    u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_cmd_max_, -0.05);
   }
+  u_cmd = -sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  distance)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
+
 
   geometry_msgs::Twist backup_cmd;
   backup_cmd.linear.x = u_cmd;
