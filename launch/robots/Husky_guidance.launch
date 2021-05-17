@@ -4,6 +4,7 @@
   <arg name="enable_ground_truth"     default="false"/>
 
   <arg name="max_yawrate"             default="0.5"/>
+  <arg name="map_res"                 default="0.15"/>
   <!-- <arg name="max_forward_speed"       default="1.25"/> -->
   <arg name="max_forward_speed"       default="1.0"/>
   <arg name="lookahead_distance"      default="1.0"/>
@@ -49,9 +50,10 @@
   </include>
 
   <!-- Backup detection -->
-  <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
+  <!-- <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-  </include>
+    <arg name="resolution"       value="$(arg map_res)"/>
+  </include> -->
 
   <!-- Husky safety -->
   <include file="$(find marble_guidance)/launch/common/husky_safety.launch" if="$(arg enable_husky_safety)">
@@ -65,6 +67,7 @@
     <arg name="enable_husky_safety"     value="$(arg enable_husky_safety)"/>
     <arg name="max_yawrate"         value="$(arg max_yawrate)" />
     <arg name="yaw_error_k"         value="$(arg yaw_error_k)" />
+    <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
 
   </include>
 

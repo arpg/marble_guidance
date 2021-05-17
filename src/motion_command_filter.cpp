@@ -32,6 +32,7 @@ void motionCommandFilter::init() {
     pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
     pnh_.param("yawrate_max", yawrate_max_ , 1.0);
     pnh_.param("backup_lookahead_distance", backup_lookahead_dist_, 1.0);
+    pnh_.param("max_forward_speed", u_fwd_cmd_max_, 0.5);
     pnh_.param("max_backward_speed", u_back_cmd_max_, 0.5);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
 
@@ -283,7 +284,7 @@ void motionCommandFilter::filterCommands(){
 
         if(min_lidar_dist_ < 1.0){
           ROS_INFO_THROTTLE(1.0,"Getting close to obstacle");
-          control_command_msg_.linear.x = sat(path_cmd_vel_.linear.x*pow(min_lidar_dist_,2), 0.1, u_cmd_max_);
+          control_command_msg_.linear.x = sat(path_cmd_vel_.linear.x*pow(min_lidar_dist_,2), 0.1, u_fwd_cmd_max_);
         }
         // Regulate vehicle forward speed based on safety limits
         if(too_close_side_){
@@ -371,7 +372,7 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
   // FORWARD SPEED COMMAND
   // Slow down if we are approaching the lookahead point
 
-  u_cmd = -sat(u_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.05, u_back_cmd_max_);
+  u_cmd = -sat(u_back_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.05, u_back_cmd_max_);
   u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_back_cmd_max_, -.05);
 
   geometry_msgs::Twist backup_cmd;

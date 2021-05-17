@@ -158,7 +158,7 @@ class motionCommandFilter {
     double yawrate_k0_;
     double yawrate_kd_;
     double yawrate_max_;
-    double u_cmd_max_;
+    double u_fwd_cmd_max_;
     double u_back_cmd_max_;
     double yaw_error_k_;
 
