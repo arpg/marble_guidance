@@ -5,14 +5,13 @@
 
   <arg name="max_yawrate"             default="0.5"/>
   <!-- <arg name="max_forward_speed"       default="1.25"/> -->
-  <arg name="max_forward_speed"       default="0.75"/>
+  <arg name="max_forward_speed"       default="1.0"/>
   <arg name="lookahead_distance"      default="1.0"/>
   <arg name="yawrate_k0"              default="0.5"/>
   <arg name="yawrate_kd"              default="1.0"/>
-  <arg name="yaw_error_k"             default="1.5"/>
+  <arg name="yaw_error_k"             default="1.25"/>
   <arg name="sim"                     default="false"/>
   <arg name="enable_husky_safety"     default="true"/>
-
 
   <arg name="path_topic"              default="scan_plan_node/path_out"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
@@ -51,9 +50,7 @@
 
   <!-- Backup detection -->
   <include file="$(find marble_guidance)/launch/common/backup_detector.launch">
-
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
-
   </include>
 
   <!-- Husky safety -->
@@ -66,6 +63,8 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
     <arg name="cmd_vel_topic"    value="$(arg cmd_vel_topic)"/>
     <arg name="enable_husky_safety"     value="$(arg enable_husky_safety)"/>
+    <arg name="max_yawrate"         value="$(arg max_yawrate)" />
+    <arg name="yaw_error_k"         value="$(arg yaw_error_k)" />
 
   </include>
 

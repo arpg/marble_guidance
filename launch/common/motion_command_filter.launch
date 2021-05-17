@@ -3,6 +3,8 @@
   <arg name="vehicle_name" default="X1"/>
   <arg name="cmd_vel_topic" default="cmd_vel"/>
   <arg name="enable_husky_safety"     default="true"/>
+  <arg name="max_yawrate"         default=".75" />
+  <arg name="yaw_error_k"         default="1.0" />
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
@@ -20,16 +22,22 @@
     <param name="loop_rate"                       value="20.0"/>
     <param name="connection_failure_thresh"       value="1.0"/>
 
+    <!-- Backup controller params -->
     <param name="yawrate_k0"                      value="0.5"/>
     <param name="yawrate_kd"                      value="1.0"/>
-    <param name="max_yawrate"                     value="0.75"/>
-    <param name="max_forward_speed"               value="0.5"/>
-    <param name="lookahead_distance_threshold"    value="0.5"/>
-    <param name="enable_speed_regulation"         value="true"/>
-    <param name="enable_forward_speed_filtering"  value="true"/>
+    <param name="max_yawrate"                     value="$(arg max_yawrate)"/>
+    <param name="max_backward_speed"              value="0.5"/>
+    <param name="backup_lookahead_dist"           value="0.75"/>
+    <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
 
+    <!-- Motion filter parameters -->
+    <param name="fwd_speed_lp_filter_const_up"      value=".75"/>
+    <param name="fwd_speed_lp_filter_const_down"    value=".95"/>
+    <param name="yaw_rate_lp_filter_const_up"      value=".75"/>
+    <param name="yaw_rate_lp_filter_const_down"    value=".95"/>
+
+    <!-- Safety params -->
     <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
-    <param name="yaw_error_k"                     value="2.0"/>
     <param name="close_side_speed"                value="0.1"/>
 
   </node>

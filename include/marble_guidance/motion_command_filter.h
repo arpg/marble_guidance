@@ -154,12 +154,12 @@ class motionCommandFilter {
     geometry_msgs::Twist control_command_msg_;
 
     // computeBackupCmd
-    double lookahead_dist_thresh_;
+    double backup_lookahead_dist_;
     double yawrate_k0_;
     double yawrate_kd_;
     double yawrate_max_;
     double u_cmd_max_;
-    bool enable_speed_regulation_;
+    double u_back_cmd_max_;
     double yaw_error_k_;
 
     // Husky Safety
@@ -175,10 +175,13 @@ class motionCommandFilter {
     ros::Time last_sf_cmd_time_;
 
     // lowpassFilterCommands
-    bool enable_fwd_speed_filtering_;
+    bool enable_yaw_rate_filtering_;
     float last_forward_speed_;
+    float last_yaw_rate_;
     double u_cmd_lp_filt_const_up_;
     double u_cmd_lp_filt_const_down_;
+    double yaw_rate_cmd_lp_filt_const_up_;
+    double yaw_rate_cmd_lp_filt_const_down_;
 
     float min_lidar_dist_;
 

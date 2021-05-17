@@ -24,7 +24,6 @@ void motionCommandFilter::init() {
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
-    pnh_.param("use_stamped_twist", use_stamped_twist_, false);
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
     pnh_.param("enable_husky_safety", enable_husky_safety_, false);
     pnh_.param("enable_small_field_assist", enable_sf_assist_, false);
@@ -32,14 +31,15 @@ void motionCommandFilter::init() {
     pnh_.param("yawrate_k0", yawrate_k0_, 1.0);
     pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
     pnh_.param("yawrate_max", yawrate_max_ , 1.0);
-    pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
-    pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
-    pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
-    pnh_.param("enable_forward_speed_filtering", enable_fwd_speed_filtering_, false);
+    pnh_.param("backup_lookahead_distance", backup_lookahead_dist_, 1.0);
+    pnh_.param("max_backward_speed", u_back_cmd_max_, 0.5);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
 
     pnh_.param("fwd_speed_lp_filter_const_up", u_cmd_lp_filt_const_up_, .75);
     pnh_.param("fwd_speed_lp_filter_const_down", u_cmd_lp_filt_const_up_, .95);
+
+    pnh_.param("yaw_rate_lp_filter_const_up", yaw_rate_cmd_lp_filt_const_up_, .85);
+    pnh_.param("yaw_rate_lp_filter_const_down", yaw_rate_cmd_lp_filt_const_down_, .95);
 
     pnh_.param("close_side_speed", close_side_speed_, .1);
 
@@ -56,6 +56,8 @@ void motionCommandFilter::init() {
     too_close_front_ = false;
 
     last_forward_speed_ = 0.0;
+    last_yaw_rate_ = 0.0;
+    enable_yaw_rate_filtering_ = true;
 
     close_side_speed_ = 0.1;
 
@@ -368,11 +370,9 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   // FORWARD SPEED COMMAND
   // Slow down if we are approaching the lookahead point
-  if(enable_speed_regulation_){
-    u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_cmd_max_, -0.05);
-  }
-  u_cmd = -sat(u_cmd_max_*(1 - ((lookahead_dist_thresh_ -  distance)/lookahead_dist_thresh_)), 0.0, u_cmd_max_);
 
+  u_cmd = -sat(u_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.05, u_back_cmd_max_);
+  u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_back_cmd_max_, -.05);
 
   geometry_msgs::Twist backup_cmd;
   backup_cmd.linear.x = u_cmd;
@@ -389,9 +389,10 @@ void motionCommandFilter::publishCommands(){
   //   control_command_msg_stamped_.twist = control_command_msg_;
   //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
   // } else {
-    if(enable_fwd_speed_filtering_){
-      lowpassFilterCommands(control_command_msg_);
-    }
+
+    lowpassFilterCommands(control_command_msg_);
+
+
     pub_cmd_vel_.publish(control_command_msg_);
   // }
 
@@ -399,18 +400,44 @@ void motionCommandFilter::publishCommands(){
 
 void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_command){
   // We want different filters for speeding up vs slowing down
-  if(new_command.linear.x > last_forward_speed_){
-    control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
-    last_forward_speed_ = control_command_msg_.linear.x;
-  } else if (new_command.linear.x < last_forward_speed_){
-    control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
-    last_forward_speed_ = control_command_msg_.linear.x;
+    bool backup = ( state_ == motionCommandFilter::PATH_BACKUP || state_ == motionCommandFilter::TRAJ_BACKUP);
+    float back_const_up_ = .75;
+    float back_const_down_ = .95;
+    if(new_command.linear.x > last_forward_speed_){
+      if(!backup){
+        control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;
+      } else {
+        control_command_msg_.linear.x = back_const_down_*last_forward_speed_ + (1.0 - back_const_down_)*new_command.linear.x;
+      }
+      last_forward_speed_ = control_command_msg_.linear.x;
+    } else if (new_command.linear.x < last_forward_speed_){
+      if(!backup){
+        control_command_msg_.linear.x = u_cmd_lp_filt_const_down_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_down_)*new_command.linear.x;
+      } else {
+        control_command_msg_.linear.x = back_const_up_*last_forward_speed_ + (1.0 - back_const_up_)*new_command.linear.x;
+      }
+      last_forward_speed_ = control_command_msg_.linear.x;
+    }
+
+  if(enable_yaw_rate_filtering_){
+    if(new_command.angular.z > last_yaw_rate_){
+      control_command_msg_.angular.z = yaw_rate_cmd_lp_filt_const_up_*last_yaw_rate_ + (1.0 - yaw_rate_cmd_lp_filt_const_up_)*new_command.angular.z;
+      last_yaw_rate_ = control_command_msg_.angular.z;
+    } else if (new_command.angular.z < last_yaw_rate_){
+      control_command_msg_.angular.z = yaw_rate_cmd_lp_filt_const_down_*last_yaw_rate_ + (1.0 - yaw_rate_cmd_lp_filt_const_down_)*new_command.angular.z;
+      last_yaw_rate_ = control_command_msg_.angular.z;
+    }
   }
 
   // Need to hard stop if commanded
   if(new_command.linear.x == 0.0){
     control_command_msg_.linear.x = 0.0;
     last_forward_speed_ = 0.0;
+  }
+  // Need to hard stop if commanded
+  if(new_command.angular.z == 0.0){
+    control_command_msg_.angular.z = 0.0;
+    last_yaw_rate_ = 0.0;
   }
 }
 
