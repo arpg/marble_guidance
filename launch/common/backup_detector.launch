@@ -1,8 +1,6 @@
 <launch>
 
-  <!-- Launch the octomap to laserscan node -->
-  <!-- <include file="find"  -->
-  <arg name="vehicle_name"   default="X1"/>
+  <arg name="vehicle_name"   default="H01"/>
   <arg name="map_frame"      default="world"/>
   <arg name="resolution"     default=".15"/>
 
@@ -17,13 +15,13 @@
     <param name="loop_rate"                         value="20.0"/>
 
     <param name="pitch_limit"                       value=".1"/>
-    <param name="safety_radius"                     value="2.0"/>
-    <param name="z_lower_threshold"                 value=".45"/>
+    <param name="safety_radius"                     value="0.75"/>
+    <param name="z_lower_threshold"                 value=".25"/>
     <param name="resolution"                        value="$(arg resolution)"/>
 
-    <param name="num_query_point_rows"              value="10"/>
-    <param name="num_query_point_cols"              value="10"/>
-    <param name="num_query_point_layers"            value="10"/>
+    <param name="num_query_point_rows"              value="20"/>
+    <param name="num_query_point_cols"              value="20"/>
+    <param name="num_query_point_layers"            value="15"/>
 
   </node>
 

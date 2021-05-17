@@ -206,36 +206,36 @@ void motionCommandFilter::determineMotionState(){
       if(!enable_backup_){
         state_ = motionCommandFilter::PATH_TURN_AROUND;
       }
-      if(enable_trajectory_following_){
-        state_ = motionCommandFilter::TRAJ_FOLLOW;
-      }
+      // if(enable_trajectory_following_){
+      //   state_ = motionCommandFilter::TRAJ_FOLLOW;
+      // }
       break;
 
     case motionCommandFilter::TRAJ_BACKUP:
       if(!enable_backup_){
         state_ = motionCommandFilter::TRAJ_TURN_AROUND;
       }
-      if(!enable_trajectory_following_){
-        state_ = motionCommandFilter::PATH_FOLLOW;
-      }
+      // if(!enable_trajectory_following_){
+      //   state_ = motionCommandFilter::PATH_FOLLOW;
+      // }
       break;
 
     case motionCommandFilter::PATH_TURN_AROUND:
-      if(path_motion_type_ = a_fwd_motion_){
+      if(path_motion_type_ == a_fwd_motion_){
         state_ = motionCommandFilter::PATH_FOLLOW;
       }
-      if(!enable_trajectory_following_){
-        state_ = motionCommandFilter::TRAJ_FOLLOW;
-      }
+      // if(!enable_trajectory_following_){
+      //   state_ = motionCommandFilter::TRAJ_FOLLOW;
+      // }
       break;
 
     case motionCommandFilter::TRAJ_TURN_AROUND:
-      if(traj_motion_type_ = a_fwd_motion_){
+      if(traj_motion_type_ == a_fwd_motion_){
         state_ = motionCommandFilter::TRAJ_FOLLOW;
       }
-      if(!enable_trajectory_following_){
-        state_ = motionCommandFilter::PATH_FOLLOW;
-      }
+      // if(!enable_trajectory_following_){
+      //   state_ = motionCommandFilter::PATH_FOLLOW;
+      // }
       break;
 
     case motionCommandFilter::ESTOP:
@@ -333,12 +333,12 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::PATH_TURN_AROUND:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: turning around");
+      ROS_INFO_THROTTLE(1.0,"Motion filter: path turning around");
       control_command_msg_ = path_cmd_vel_;
       break;
 
     case motionCommandFilter::TRAJ_TURN_AROUND:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: turning around");
+      ROS_INFO_THROTTLE(1.0,"Motion filter:traj turning around");
       control_command_msg_ = traj_cmd_vel_;
       break;
 
