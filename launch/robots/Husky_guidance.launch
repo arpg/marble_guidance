@@ -15,7 +15,7 @@
   <arg name="enable_husky_safety"     default="true"/>
 
   <!-- <arg name="path_topic"              default="scan_plan_node/path_out"/> -->
-  <arg name="path_topic"              default="/planned_path"/>
+  <arg name="path_topic"              default="planned_path"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
 
   <!-- <arg name="cmd_vel_topic"            default="controller0/cmd_vel"/> -->
