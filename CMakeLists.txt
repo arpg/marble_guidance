@@ -85,6 +85,7 @@ add_executable(trajectory_follower_node src/trajectory_follower_node.cpp)
 target_link_libraries(trajectory_follower_node trajectory_follower ${catkin_LIBRARIES})
 
 add_library(trajectory_generator_node src/trajectory_generator_node.cpp)
+add_dependencies(trajectory_generator_node ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(trajectory_generator_node ${catkin_LIBRARIES} )
 
 add_executable(trajectory_generator src/trajectory_generator.cpp)
@@ -98,6 +99,7 @@ add_executable(backup_detector_node src/backup_detector_node.cpp)
 target_link_libraries(backup_detector_node backup_detector ${catkin_LIBRARIES})
 
 add_library(motion_command_filter src/motion_command_filter.cpp)
+add_dependencies(motion_command_filter ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(motion_command_filter ${catkin_LIBRARIES} )
 
 add_executable(motion_command_filter_node src/motion_command_filter_node.cpp)
