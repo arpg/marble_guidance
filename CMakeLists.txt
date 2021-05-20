@@ -106,6 +106,7 @@ add_executable(motion_command_filter_node src/motion_command_filter_node.cpp)
 target_link_libraries(motion_command_filter_node motion_command_filter ${catkin_LIBRARIES})
 
 add_library(husky_safety src/husky_safety.cpp)
+add_dependencies(husky_safety ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(husky_safety ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 add_executable(husky_safety_node src/husky_safety_node.cpp)
