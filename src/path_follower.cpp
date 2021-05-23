@@ -240,7 +240,11 @@ void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
 
   current_path_ = *path_msg;
   if(!have_path_) have_path_ = true;
-  new_path_ = true;
+  if(!new_path_){
+    if(current_path_.poses.size()){
+      new_path_ = true;
+    }
+  }
   last_path_time_ = ros::Time::now();
 
 }
