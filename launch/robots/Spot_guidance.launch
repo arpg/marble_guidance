@@ -13,6 +13,8 @@
   <!--<arg name="path_topic"               default="path_stitched"/> -->
   <arg name="cmd_vel_topic"            default="/spot/cmd_vel"/>
 
+  <arg name="map_res"        default=".15"/>
+
   <!-- Path follower -->
   <include file="$(find marble_guidance)/launch/common/path_follower.launch">
 
