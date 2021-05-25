@@ -2,7 +2,7 @@
 
   <arg name="vehicle_name" default="X1"/>
   <arg name="cmd_vel_topic" default="cmd_vel"/>
-  <arg name="enable_husky_safety"     default="true"/>
+  <arg name="enable_husky_safety"     default="false"/>
   <arg name="max_yawrate"         default=".75" />
   <arg name="max_forward_speed"         default="1.0" />
   <arg name="yaw_error_k"         default="1.0" />
