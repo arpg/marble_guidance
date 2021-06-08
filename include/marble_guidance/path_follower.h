@@ -42,6 +42,7 @@ class pathFollower{
     void publishMotionCmd();
     bool findLookahead(nav_msgs::Path path);
     float distanceTwoPoints3D(geometry_msgs::Point p1, geometry_msgs::Point p2);
+    float distanceTwoPoints2D(geometry_msgs::Point p1, geometry_msgs::Point p2);
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     bool ready();

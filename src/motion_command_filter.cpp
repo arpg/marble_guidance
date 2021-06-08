@@ -176,7 +176,12 @@ void motionCommandFilter::determineMotionState(){
       // switch to backup path following
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
-        if(abs(wrapAngle(relative_lookahead_heading - current_yaw_ )) > backup_turn_thresh_){
+        float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+        //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
+        //ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
+        //ROS_INFO("")
+        //ROS_INFO("Relative heading error: %f", relative_heading_error);
+        if(relative_heading_error > backup_turn_thresh_){
           state_ = motionCommandFilter::PATH_BACKUP;
         }
       }

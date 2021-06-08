@@ -140,7 +140,8 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 
     float dist;
     for(int i = l-1; i >= 0; i--){
-      dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
+      //dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
+      dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
       //ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
 
@@ -188,7 +189,7 @@ void pathFollower::computeControlCommands(){
     // Create a yaw rate command from the heading error to the lookahead point
     float relative_lookahead_heading = atan2((lookahead_pose_.position.y - current_pos_.y),(lookahead_pose_.position.x - current_pos_.x));
     float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
-    float dist = distanceTwoPoints3D(current_pos_, lookahead_pose_.position);
+    float dist = distanceTwoPoints2D(current_pos_, lookahead_pose_.position);
 
     if(abs(lookahead_angle_error) < turn_in_place_thresh_){
       // Use an exponential attractor to generate yawrate cmds
@@ -276,6 +277,12 @@ bool pathFollower::ready(){
 float pathFollower::distanceTwoPoints3D(geometry_msgs::Point p1, geometry_msgs::Point p2){
 
   return sqrt(pow(p1.x-p2.x, 2) + pow(p1.y-p2.y, 2) + pow(p1.z-p2.z, 2));
+
+}
+
+float pathFollower::distanceTwoPoints2D(geometry_msgs::Point p1, geometry_msgs::Point p2){
+
+  return sqrt(pow(p1.x-p2.x, 2) + pow(p1.y-p2.y, 2));
 
 }
 
