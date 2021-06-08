@@ -175,7 +175,7 @@ void motionCommandFilter::determineMotionState(){
       // If we get a path command to turn around, but enable backup is true
       // switch to backup path following
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
-        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead.x - current_pos_.x)
+        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
         if(abs(wrapAngle(relative_lookahead_heading - current_yaw_ )) > backup_turn_thresh_){
           state_ = motionCommandFilter::PATH_BACKUP;
         }
