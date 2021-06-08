@@ -184,6 +184,7 @@ class motionCommandFilter {
     double yaw_rate_cmd_lp_filt_const_down_;
 
     float min_lidar_dist_;
+    double backup_turn_thresh_;
 
 
 }; // class SimpleNodeClass

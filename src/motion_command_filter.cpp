@@ -60,7 +60,7 @@ void motionCommandFilter::init() {
     last_yaw_rate_ = 0.0;
     enable_yaw_rate_filtering_ = true;
 
-    close_side_speed_ = 0.1;
+    backup_turn_thresh_ = 1.5707;
 
 }
 
@@ -175,7 +175,10 @@ void motionCommandFilter::determineMotionState(){
       // If we get a path command to turn around, but enable backup is true
       // switch to backup path following
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
-        state_ = motionCommandFilter::PATH_BACKUP;
+        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead.x - current_pos_.x)
+        if(abs(wrapAngle(relative_lookahead_heading - current_yaw_ )) > backup_turn_thresh_){
+          state_ = motionCommandFilter::PATH_BACKUP;
+        }
       }
 
       // If we get a command to start following our trajectory
