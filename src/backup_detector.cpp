@@ -27,7 +27,8 @@ void backupDetector::init() {
   pnh_.param("num_query_point_layers", num_query_point_layers_, 10);
   pnh_.param("query_point_spacing", query_point_spacing_, .2);
   pnh_.param("safety_radius", safety_radius_, .75);
-  pnh_.param("z_lower_threshold", z_lower_threshold_, .2);
+  pnh_.param("safety_z_min", safety_z_min_, .2);
+  pnh_.param("safety_z_max", safety_z_max_, 1.5);
 
   pnh_.param("resolution", resolution_, 0.15);
 
@@ -69,6 +70,22 @@ void backupDetector::generateQueryPoints(){
       }
     }
   }
+}
+
+void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped transform_stamped){
+  // Transform the set of querypoints from the vehicle frame to the map frame
+  geometry_msgs::PointStamped initial_pt;
+  initial_pt.header.stamp = ros::Time::now();
+  initial_pt.header.frame_id = base_link_frame_;
+  geometry_msgs::PointStamped transformed_pt;
+  transformed_pt.header.stamp = ros::Time::now();
+  transformed_query_point_vec_.clear();
+  for(int i= 0; i < num_query_points_; i++){
+    initial_pt.point = query_point_vec_[i];
+    tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
+    transformed_query_point_vec_.push_back(transformed_pt);
+  }
+
 }
 
 void backupDetector::publishQueryPointsPcl(){
@@ -123,22 +140,6 @@ void backupDetector::imuCb(const sensor_msgs::ImuConstPtr& imu_msg){
     //pitch_ = -temp_roll;
 }
 
-void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped transform_stamped){
-  // Transform the set of querypoints from the vehicle frame to the map frame
-  geometry_msgs::PointStamped initial_pt;
-  initial_pt.header.stamp = ros::Time::now();
-  initial_pt.header.frame_id = base_link_frame_;
-  geometry_msgs::PointStamped transformed_pt;
-  transformed_pt.header.stamp = ros::Time::now();
-  transformed_query_point_vec_.clear();
-  for(int i= 0; i < num_query_points_; i++){
-    initial_pt.point = query_point_vec_[i];
-    tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
-    transformed_query_point_vec_.push_back(transformed_pt);
-  }
-
-}
-
 void backupDetector::processOctomap(){
   // Check the surrounding octomap to see if we are able to turn around
   // Need to query all voxels in a predefined radius around the vehicle.
@@ -171,8 +172,8 @@ void backupDetector::processOctomap(){
       occupied_cell_indices_vec_.push_back(i);
       // Check if the occupied cell is within our safety cylinder
       voxel_radius = sqrt(pow(query_point_vec_[i].x, 2) + pow(query_point_vec_[i].y, 2));
-      if(voxel_radius < safety_radius_ && query_point_vec_[i].z > z_lower_threshold_){
-        if(query_point_vec_[i].z > z_lower_threshold_){
+      if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_){
+        if(query_point_vec_[i].z > safety_z_min_ && query_point_vec_[i].z < safety_z_max_){
          close_obstacle_flag_ = true;
          close_cell_indices_vec_.push_back(i);
         }

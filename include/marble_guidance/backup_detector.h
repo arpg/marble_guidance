@@ -89,7 +89,8 @@ class backupDetector{
     std_msgs::Bool backup_msg_;
 
     double safety_radius_;
-    double z_lower_threshold_;
+    double safety_z_min_;
+    double safety_z_max_;
 
     // Query point parameters
     int num_query_point_rows_;
