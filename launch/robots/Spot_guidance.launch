@@ -4,7 +4,7 @@
   <arg name="enable_ground_truth"     default="false"/>
 
   <arg name="max_yawrate"             default="0.75"/>
-  <arg name="max_forward_speed"       default="1.5"/>
+  <arg name="max_forward_speed"       default="1.0"/>
   <arg name="lookahead_distance"      default="1.0"/>
   <arg name="yawrate_k0"              default="2.0"/>
   <arg name="yawrate_kd"              default="1.0"/>
