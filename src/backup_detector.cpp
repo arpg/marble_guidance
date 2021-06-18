@@ -122,7 +122,7 @@ void backupDetector::publishQueryPointsPcl(){
 void backupDetector::octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
 {
   if(!have_octomap_) have_octomap_ = true;
-  ROS_INFO("Occupancy octomap callback called");
+  // ROS_INFO("Occupancy octomap callback called");
   if (msg->data.size() == 0) return;
   delete occupancyTree_;
   occupancyTree_ = (octomap::RoughOcTree*)octomap_msgs::binaryMsgToMap(*msg);
