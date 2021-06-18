@@ -15,7 +15,7 @@
     <param name="loop_rate"                         value="20.0"/>
 
     <param name="pitch_limit"                       value=".1"/>
-    <param name="safety_radius"                     value="1.0"/>
+    <param name="safety_radius"                     value="0.8"/>
     <param name="safety_z_min"                      value=".25"/>
     <param name="safety_z_max"                      value="1.1"/>
     <param name="resolution"                        value="$(arg resolution)"/>
