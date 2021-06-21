@@ -177,10 +177,10 @@ void motionCommandFilter::determineMotionState(){
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
         float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
-        //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
-        //ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
+        ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
+        ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
         //ROS_INFO("")
-        //ROS_INFO("Relative heading error: %f", relative_heading_error);
+        ROS_INFO("Relative heading error: %f", relative_heading_error);
         if(relative_heading_error > backup_turn_thresh_){
           state_ = motionCommandFilter::PATH_BACKUP;
         }
@@ -274,28 +274,28 @@ void motionCommandFilter::filterCommands(){
   switch(state_){
 
     case motionCommandFilter::STARTUP:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: startup");
+      ROS_INFO_THROTTLE(0.5,"Motion filter: startup");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;
 
     case motionCommandFilter::ESTOP:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: estop");
+      ROS_INFO_THROTTLE(0.5,"Motion filter: estop");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;
 
     case motionCommandFilter::PATH_FOLLOW:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: path follow");
+      ROS_INFO_THROTTLE(0.5,"Motion filter: path follow");
       control_command_msg_ = path_cmd_vel_;
       if(enable_husky_safety_){
 
-        if(min_lidar_dist_ < 1.0){
+        if(min_lidar_dist_ < 1.0 && path_cmd_vel_.linear.x != 0.0){
           ROS_INFO_THROTTLE(1.0,"Getting close to obstacle");
           control_command_msg_.linear.x = sat(path_cmd_vel_.linear.x*pow(min_lidar_dist_,2), 0.1, u_fwd_cmd_max_);
         }
         // Regulate vehicle forward speed based on safety limits
-        if(too_close_side_){
+        if(too_close_side_&& path_cmd_vel_.linear.x != 0.0){
           ROS_INFO_THROTTLE(1.0,"Too close on the side!");
           control_command_msg_.linear.x = close_side_speed_;
         }
@@ -334,7 +334,7 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::PATH_BACKUP:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: path backup");
+      ROS_INFO_THROTTLE(0.5,"Motion filter: path backup");
       control_command_msg_ = computeBackupCmd(path_lookahead_);
       break;
 
