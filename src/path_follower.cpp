@@ -181,7 +181,10 @@ void pathFollower::computeControlCommands(){
   // Check the path point spacing and fill in large gaps
   if(current_path_.poses.size()){
     	conditionPath(current_path_);
+  } else {
+      conditioned_path_.clear();
   }
+
 
   // Find the lookahead point
   if(findLookahead(conditioned_path_)){
