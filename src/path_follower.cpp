@@ -182,7 +182,7 @@ void pathFollower::computeControlCommands(){
   if(current_path_.poses.size()){
     	conditionPath(current_path_);
   } else {
-      conditioned_path_.clear();
+      conditioned_path_.poses.clear();
   }
 
 
