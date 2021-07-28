@@ -401,9 +401,9 @@ void motionCommandFilter::publishCommands(){
 
     lowpassFilterCommands(control_command_msg_);
 
-    if(!(state_ == motionCommandFilter::ESTOP)){
+    // if(!(state_ == motionCommandFilter::ESTOP)){
       pub_cmd_vel_.publish(control_command_msg_);
-    }
+    // }
 
 }
 
