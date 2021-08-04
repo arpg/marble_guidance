@@ -264,8 +264,12 @@ void motionCommandFilter::determineMotionState(){
 
   // No matter what state we are in, switch to s_estop
   // if we receive an estop command.
-  if(estop_cmd_) state_ = motionCommandFilter::ESTOP;
-
+  if(estop_cmd_ && !state_ == motionCommandFilter::ESTOP){
+    state_ = motionCommandFilter::ESTOP;
+    control_command_msg_.linear.x = 0.0;
+    control_command_msg_.angular.z = 0.0;
+    pub_cmd_vel_.publish(control_command_msg_);   
+  }
 }
 
 void motionCommandFilter::filterCommands(){
@@ -398,10 +402,11 @@ void motionCommandFilter::publishCommands(){
   //   control_command_msg_stamped_.twist = control_command_msg_;
   //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
   // } else {
-
+  if(!estop_cmd_){
     lowpassFilterCommands(control_command_msg_);
 
     pub_cmd_vel_.publish(control_command_msg_);
+  }
 
 }
 
