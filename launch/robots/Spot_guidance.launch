@@ -11,7 +11,7 @@
 
   <arg name="path_topic"               default="planned_path"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
-  <arg name="cmd_vel_topic"            default="/spot/cmd_vel"/>
+  <arg name="cmd_vel_topic"            default="spot/cmd_vel"/>
 
   <arg name="map_res"        default=".15"/>
 
