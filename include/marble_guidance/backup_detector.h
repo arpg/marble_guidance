@@ -34,6 +34,8 @@
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/conversions.h>
 
+#include <marble_guidance/BackupStatus.h>
+
 using namespace std;
 
 namespace backup_detector{
@@ -70,6 +72,7 @@ class backupDetector{
     ros::Publisher pub_backup_;
     ros::Publisher pub_query_point_pcl_;
     ros::Publisher pub_transformed_query_point_pcl_;
+    ros::Publisher pub_transformed_fs_query_point_pcl_;
     ros::Publisher pub_occupied_points_pcl_;
     ros::Publisher pub_close_points_pcl_;
 
@@ -117,6 +120,16 @@ class backupDetector{
     vector<int> close_cell_indices_vec_;
 
     double resolution_;
+
+    marble_guidance::BackupStatus backup_status_msg_;
+
+    geometry_msgs::Point fs_query_center_;
+    vector <geometry_msgs::Point> fs_query_point_vec_;
+    vector <geometry_msgs::PointStamped> transformed_fs_query_point_vec_;
+    int num_fs_query_point_rows_;
+    int num_fs_query_point_cols_;
+    int num_fs_query_point_layers_;
+    double num_fs_query_points_;
 
 };
 

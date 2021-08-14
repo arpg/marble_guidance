@@ -13,7 +13,7 @@ void backupDetector::init() {
   sub_octomap_ = nh_.subscribe("octomap", 1, &backupDetector::octomapCb, this);
   sub_imu_ = nh_.subscribe("imu", 1, &backupDetector::imuCb, this);
 
-  pub_backup_ = nh_.advertise<std_msgs::Bool>("enable_backup", 1);
+  pub_backup_ = nh_.advertise<marble_guidance::BackupStatus>("backup_status", 1);
   pub_query_point_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("query_points", 1);
   pub_transformed_query_point_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("transformed_query_points", 1);
   pub_occupied_points_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("occupied_points", 1);
@@ -25,6 +25,9 @@ void backupDetector::init() {
   pnh_.param("num_query_point_rows", num_query_point_rows_, 10);
   pnh_.param("num_query_point_cols", num_query_point_cols_, 10);
   pnh_.param("num_query_point_layers", num_query_point_layers_, 10);
+  pnh_.param("num_free_space_query_point_rows", num_fs_query_point_rows_, 1);
+  pnh_.param("num_free_space_query_point_cols", num_fs_query_point_cols_, 1);
+  pnh_.param("num_free_space_query_point_layers", num_fs_query_point_layers_, 1);
   pnh_.param("query_point_spacing", query_point_spacing_, .2);
   pnh_.param("safety_radius", safety_radius_, .75);
   pnh_.param("safety_z_min", safety_z_min_, .2);
@@ -50,6 +53,14 @@ void backupDetector::init() {
   // Merged OcTree
   occupancyTree_ = new octomap::OcTree(resolution_);
 
+  backup_status_msg_.enable_backup = false;
+  backup_status_msg_.backup_obstacle = false;
+
+  fs_query_center_.x = -1.0;
+  fs_query_center_.y = 0.0;
+  fs_query_center_.z = 0.25;
+  num_fs_query_points_ = num_fs_query_point_rows_*num_fs_query_point_cols_*fs_num_query_point_layers_;
+
   // Generate the query points for octomap voxel lookups
   generateQueryPoints();
 
@@ -70,6 +81,20 @@ void backupDetector::generateQueryPoints(){
       }
     }
   }
+
+  // Generate backup free space query points
+  geometry_msgs::Point fs_query_point;
+  for(int i = 0; i < num_fs_query_point_rows_; i++){
+    for(int j = 0; j < num_fs_query_point_cols_; j++){
+      for(int k = 0; k < num_fs_query_point_layers_; k++){
+        fs_query_point.x = fs_query_center.x + i*query_point_spacing_;
+        fs_query_point.y = fs_query_center.y + j*query_point_spacing_;
+        fs_query_point.z = fs_query_center.z + k*query_point_spacing_;
+        fs_query_point_vec_.push_back(fs_query_point);
+      }
+    }
+  }
+
 }
 
 void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped transform_stamped){
@@ -84,6 +109,14 @@ void backupDetector::transformQueryPoints(const geometry_msgs::TransformStamped 
     initial_pt.point = query_point_vec_[i];
     tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
     transformed_query_point_vec_.push_back(transformed_pt);
+  }
+
+  transformed_pt.header.stamp = ros::Time::now();
+  transformed_fs_query_point_vec_.clear();
+  for(int i= 0; i < num_fs_query_points_; i++){
+    initial_pt.point = fs_query_point_vec_[i];
+    tf2::doTransform(initial_pt, transformed_pt, transform_stamped);
+    transformed_fs_query_point_vec_.push_back(transformed_pt);
   }
 
 }
@@ -116,6 +149,35 @@ void backupDetector::publishQueryPointsPcl(){
   cloud_msg.header.stamp = ros::Time::now();
 
   pub_transformed_query_point_pcl_.publish(cloud_msg);
+
+  // Do the free space query points as well
+  pcl::PointCloud<pcl::PointXYZ> fs_query_point_pcl;
+  for (int i = 0; i < num_fs_query_points_; i++){
+    pcl_point = {fs_query_point_vec_[i].x, fs_query_point_vec_[i].y, fs_query_point_vec_[i].z};
+    fs_query_point_pcl.push_back(pcl_point);
+  }
+
+  sensor_msgs::PointCloud2 fs_cloud_msg;
+  pcl::toROSMsg(fs_query_point_pcl, fs_cloud_msg);
+  fs_cloud_msg.header.frame_id = base_link_frame_;
+  fs_cloud_msg.header.stamp = ros::Time::now();
+
+  pub_fs_query_point_pcl_.publish(fs_cloud_msg);
+
+  pcl::PointCloud<pcl::PointXYZ> transformed_fs_query_point_pcl;
+  int num_transformed_points = transformed_fs_query_point_vec_.size();
+  for (int i = 0; i < num_transformed_points; i++){
+    pcl_point = {transformed_fs_query_point_vec_[i].point.x, transformed_fs_query_point_vec_[i].point.y, transformed_fs_query_point_vec_[i].point.z};
+    transformed_fs_query_point_pcl.push_back(pcl_point);
+  }
+
+  pcl::toROSMsg(transformed_fs_query_point_pcl, fs_cloud_msg);
+  cloud_msg.header.frame_id = map_frame_;
+  cloud_msg.header.stamp = ros::Time::now();
+
+  pub_transformed_fs_query_point_pcl_.publish(fs_cloud_msg);
+
+
 
 }
 
@@ -170,6 +232,7 @@ void backupDetector::processOctomap(){
     if(current_node && current_node->getLogOdds() >= 0.0){
       // Cell is occupied, need to track the index
       occupied_cell_indices_vec_.push_back(i);
+
       // Check if the occupied cell is within our safety cylinder
       voxel_radius = sqrt(pow(query_point_vec_[i].x, 2) + pow(query_point_vec_[i].y, 2));
       if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_){
@@ -178,6 +241,9 @@ void backupDetector::processOctomap(){
          close_cell_indices_vec_.push_back(i);
         }
       }
+
+      // Check to make sure the area behind the vehicle is free
+
     }
   }
 
@@ -227,8 +293,10 @@ void backupDetector::processIMU(){
 }
 
 void backupDetector::publishBackupMsg(){
-  backup_msg_.data = (close_obstacle_flag_ || bad_attitude_flag_);
-  pub_backup_.publish(backup_msg_);
+  //backup_msg_.data = (close_obstacle_flag_ || bad_attitude_flag_);
+  backup_status_msg_.enable_backup = (close_obstacle_flag_ || bad_attitude_flag_);
+  backup_status_msg_.backup_obstacle = backup_obstacle;
+  pub_backup_.publish(backup_status_msg_);
 }
 
 bool backupDetector::haveIMU(){
