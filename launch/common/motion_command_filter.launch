@@ -7,7 +7,7 @@
   <arg name="max_forward_speed"         default="1.0" />
   <arg name="yaw_error_k"         default="1.0" />
 
-  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
+  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance">
 
     <remap from="motion_command_filter/odometry"      to="odometry"/>
     <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
