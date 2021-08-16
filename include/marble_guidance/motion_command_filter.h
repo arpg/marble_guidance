@@ -33,6 +33,9 @@
 #include <tf/tf.h>
 #include <math.h>
 
+#include <std_srvs/Trigger.h>
+
+
 using namespace std;
 namespace motion_command_filter{
 
@@ -60,6 +63,7 @@ class motionCommandFilter {
     void checkConnections();
     void determineMotionState();
     geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
+    bool isUpstairs(const geometry_msgs::Point lookahead_point);
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
@@ -77,6 +81,8 @@ class motionCommandFilter {
       BEACON_MOTION = 9,
       ERROR = 10,
       IDLE = 11,
+      STAIR_MODE_UP,
+      STAIR_MODE_DOWN,
     };
 
  private:
@@ -85,6 +91,9 @@ class motionCommandFilter {
     // private ros node handle
     ros::NodeHandle pnh_;
     ros::NodeHandle priv_nh;
+
+    bool sendTriggerRequest(std::string type);
+
     std::string node_name_{"node_name"};
 
     // SUBSCRIBERS //
@@ -97,6 +106,7 @@ class motionCommandFilter {
     ros::Subscriber sub_husky_safety_;
     ros::Subscriber sub_sf_command_;
     ros::Subscriber sub_beacon_cmd_;
+    ros::Subscriber sub_stair_mode_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -195,6 +205,20 @@ class motionCommandFilter {
 
     float min_lidar_dist_;
     double backup_turn_thresh_;
+
+    bool is_spot_;
+    bool stair_mode_cmd_;
+    double planning_link_z_offset_;
+    double stair_mode_pitch_thresh_;
+
+    bool is_up_stairs_;
+    std::map< std::string, ros::ServiceClient > _clients;
+
+    double stair_align_thresh_;
+    double stair_turnaround_thresh_;
+    bool do_stair_align_;
+    bool do_stair_turnaround_;
+
 
 
 }; // class SimpleNodeClass
