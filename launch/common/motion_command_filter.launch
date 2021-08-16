@@ -7,6 +7,8 @@
   <arg name="max_forward_speed"         default="1.0" />
   <arg name="yaw_error_k"         default="1.0" />
 
+  <arg name="is_spot"             default="false"/>
+
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
     <remap from="motion_command_filter/odometry"      to="odometry"/>
@@ -44,6 +46,7 @@
     <param name="close_side_speed"                value="0.1"/>
 
     <param name="beacon_clear_motion_duration"    value="1.0"/>
+    <param name="is_spot"                         value="$(arg is_spot)"/>
 
 
   </node>
