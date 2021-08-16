@@ -96,7 +96,7 @@ class motionCommandFilter {
     ros::Subscriber sub_estop_cmd_;
     ros::Subscriber sub_husky_safety_;
     ros::Subscriber sub_sf_command_;
-
+    ros::Subscriber sub_beacon_cmd_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -143,6 +143,7 @@ class motionCommandFilter {
     bool beacon_drop_cmd_;
     bool started_beacon_clear_motion_;
     ros::Time beacon_clear_start_time_;
+    double beacon_clear_motion_duration_;
 
     // determineMotionState
     int state_;

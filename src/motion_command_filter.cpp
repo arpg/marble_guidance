@@ -261,8 +261,7 @@ void motionCommandFilter::determineMotionState(){
     case motionCommandFilter::BEACON_DROP:
       // If we are in the beacon drop state, wait for the beacon to drop
       if(!beacon_drop_cmd_){
-        state_ = motionCommandFilter::BEACON_MOTION
-        beacon_motion_complete_ = false;
+        state_ = motionCommandFilter::BEACON_MOTION;
         started_beacon_clear_motion_ = false;
       }
       break;
@@ -276,7 +275,7 @@ void motionCommandFilter::determineMotionState(){
         started_beacon_clear_motion_ = true;
       }
 
-      if((ros::time::now() - beacon_clear_start_time_).toSect() > beacon_clear_motion_duration_){
+      if((ros::Time::now() - beacon_clear_start_time_).toSec() > beacon_clear_motion_duration_){
         state_ = motionCommandFilter::IDLE;
       }
       break;
