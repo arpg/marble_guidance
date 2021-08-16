@@ -3,15 +3,15 @@
   <arg name="vehicle_name"            default="D01"/>
   <arg name="enable_ground_truth"     default="false"/>
 
-  <arg name="max_yawrate"             default="0.75"/>
+  <arg name="max_yawrate"             default="0.5"/>
   <arg name="max_forward_speed"       default="1.0"/>
   <arg name="lookahead_distance"      default="1.0"/>
-  <arg name="yawrate_k0"              default="2.0"/>
+  <arg name="yawrate_k0"              default="1.0"/>
   <arg name="yawrate_kd"              default="1.0"/>
 
   <arg name="path_topic"               default="planned_path"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
-  <arg name="cmd_vel_topic"            default="/spot/cmd_vel"/>
+  <arg name="cmd_vel_topic"            default="spot/cmd_vel"/>
 
   <arg name="map_res"        default=".15"/>
 
