@@ -400,7 +400,7 @@ void motionCommandFilter::filterCommands(){
 
     case motionCommandFilter::BEACON_MOTION:
       ROS_INFO_THROTTLE(5.0, "Motion filter: clearing dropped beacon");
-      control_command_msg_.linear.x = 0.1;
+      control_command_msg_.linear.x = 0.2;
       control_command_msg_.angular.z = 0.0;
       // Need to stop if we detect something in the front of the vehicle
       if(too_close_front_){
