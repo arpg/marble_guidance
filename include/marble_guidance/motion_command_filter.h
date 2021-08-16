@@ -76,6 +76,7 @@ class motionCommandFilter {
       BEACON_DROP = 8,
       BEACON_MOTION = 9,
       ERROR = 10,
+      IDLE = 11,
     };
 
  private:
@@ -140,7 +141,6 @@ class motionCommandFilter {
 
     // beaconDropCb
     bool beacon_drop_cmd_;
-    bool beacon_motion_complete_;
     bool started_beacon_clear_motion_;
     ros::Time beacon_clear_start_time_;
 

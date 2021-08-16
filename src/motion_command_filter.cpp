@@ -313,6 +313,12 @@ void motionCommandFilter::filterCommands(){
       control_command_msg_.angular.z = 0.0;
       break;
 
+    case motionCommandFilter::IDLE:
+      ROS_INFO_THROTTLE(0.5,"Motion filter: idle");
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = 0.0;
+      break;
+
     case motionCommandFilter::ESTOP:
       ROS_INFO_THROTTLE(5.0,"Motion filter: estop");
       control_command_msg_.linear.x = 0.0;
