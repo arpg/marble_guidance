@@ -229,9 +229,18 @@ void motionCommandFilter::determineMotionState(){
       break;
 
     case motionCommandFilter::PATH_BACKUP:
+    {
       if(!enable_backup_){
         state_ = motionCommandFilter::PATH_TURN_AROUND;
       }
+      float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+      float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+      if(abs(relative_heading_error) < M_PI/2.0){
+        // The path has switched and is now in front of us
+        // No need to backup any further or turn around in palce
+        state_ = motionCommandFilter::PATH_FOLLOW;
+      }
+    }
       break;
 
     case motionCommandFilter::TRAJ_BACKUP:
