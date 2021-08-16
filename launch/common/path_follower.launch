@@ -11,7 +11,7 @@
   <arg name="sim"                   default="false"/>
   <arg name="path_topic"            default="scan_plan_node/path_out"/>
 
-  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
+  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance">
 
     <remap from="path_follower/odometry"        to="odometry"/>
     <remap from="path_follower/path"            to="$(arg path_topic)"/>
