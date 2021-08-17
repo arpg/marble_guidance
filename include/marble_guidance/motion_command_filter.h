@@ -51,6 +51,7 @@ class motionCommandFilter {
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
     void backupCmdCb(const std_msgs::BoolConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
+    void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
     void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
     void filterCommands();
@@ -72,7 +73,10 @@ class motionCommandFilter {
       TRAJ_BACKUP = 5,
       PATH_TURN_AROUND = 6,
       TRAJ_TURN_AROUND = 7,
+      BEACON_DROP = 8,
+      BEACON_MOTION = 9,
       ERROR = 10,
+      IDLE = 11,
     };
 
  private:
@@ -92,7 +96,7 @@ class motionCommandFilter {
     ros::Subscriber sub_estop_cmd_;
     ros::Subscriber sub_husky_safety_;
     ros::Subscriber sub_sf_command_;
-
+    ros::Subscriber sub_beacon_cmd_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -134,6 +138,12 @@ class motionCommandFilter {
 
     // estopCmdCb
     bool estop_cmd_;
+
+    // beaconDropCb
+    bool beacon_drop_cmd_;
+    bool started_beacon_clear_motion_;
+    ros::Time beacon_clear_start_time_;
+    double beacon_clear_motion_duration_;
 
     // determineMotionState
     int state_;

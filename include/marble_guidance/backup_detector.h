@@ -28,11 +28,13 @@
 
 // Octomap libaries
 #include <octomap/octomap.h>
-#include <octomap/OcTreeStamped.h>
+//#include <octomap/OcTreeStamped.h>
+#include <rough_octomap/RoughOcTree.h>
 #include <octomap/OcTreeKey.h>
 #include <octomap/ColorOcTree.h>
 #include <octomap_msgs/Octomap.h>
-#include <octomap_msgs/conversions.h>
+// #include <octomap_msgs/conversions.h>
+#include <rough_octomap/conversions.h>
 
 using namespace std;
 
@@ -111,7 +113,7 @@ class backupDetector{
     bool bad_attitude_flag_;
 
     // Octomap
-    octomap::OcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
+    octomap::RoughOcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
     vector<octomap::OcTreeKey> coord_key_vec_;
     vector<int> occupied_cell_indices_vec_;
     vector<int> close_cell_indices_vec_;

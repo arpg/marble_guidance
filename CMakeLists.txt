@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_ros
   octomap_msgs
   cv_bridge
+  rough_octomap
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,7 +53,7 @@ add_message_files(
 catkin_package(
 #   INCLUDE_DIRS include   ${OCTOMAP_INCLUDE_DIRS}
 #  LIBRARIES marble_guidance
-#   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros pcl_ros cv_bridge
+#   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros pcl_ros cv_bridge rough_octomap
    DEPENDS OCTOMAP
 )
 
