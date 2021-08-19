@@ -447,6 +447,11 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
   u_cmd = -sat(u_back_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.05, u_back_cmd_max_);
   u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_back_cmd_max_, -.05);
 
+  if (distance < 0.5){
+    u_cmd = 0.0;
+    yawrate_cmd = 0.0;
+  }
+
   geometry_msgs::Twist backup_cmd;
   backup_cmd.linear.x = u_cmd;
   backup_cmd.angular.z = yawrate_cmd;
