@@ -15,7 +15,7 @@ void motionCommandFilter::init() {
     sub_path_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::pathMotionCmdCb, this);
     sub_traj_motion_cmd_ = nh_.subscribe("traj_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
-    sub_backup_cmd_ = nh_.subscribe("enable_backup", 1, &motionCommandFilter::backupCmdCb, this);
+    sub_backup_cmd_ = nh_.subscribe("backup_status", 1, &motionCommandFilter::backupCmdCb, this);
     sub_estop_cmd_ = nh_.subscribe("estop_cmd", 1, &motionCommandFilter::estopCmdCb, this);
     sub_husky_safety_ = nh_.subscribe("husky_safety", 1, &motionCommandFilter::huskySafetyCb, this);
     sub_sf_command_ = nh_.subscribe("sf_nearness_cmd", 1, &motionCommandFilter::sfNearnessCmdCb, this);
@@ -101,8 +101,9 @@ void motionCommandFilter::followTrajCb(const std_msgs::BoolConstPtr& msg){
   enable_trajectory_following_ = msg->data;
 }
 
-void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
-  enable_backup_ = msg->data;
+void motionCommandFilter::backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg){
+  enable_backup_ = msg->enable_backup;
+  backup_obstacle_ = msg->backup_obstacle;
 }
 
 void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
@@ -230,9 +231,6 @@ void motionCommandFilter::determineMotionState(){
 
     case motionCommandFilter::PATH_BACKUP:
     {
-      if(!enable_backup_){
-        state_ = motionCommandFilter::PATH_TURN_AROUND;
-      }
       float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
       float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
       if(abs(relative_heading_error) < M_PI/2.0){
@@ -240,6 +238,17 @@ void motionCommandFilter::determineMotionState(){
         // No need to backup any further or turn around in palce
         state_ = motionCommandFilter::PATH_FOLLOW;
       }
+
+      if(!enable_backup_){
+        state_ = motionCommandFilter::PATH_TURN_AROUND;
+      }
+
+      float distance = dist(current_pos_, path_lookahead_);
+      if(distance < .5){
+        // Reached the end of the path, need to stop.
+        state_
+      }
+
     }
       break;
 
@@ -316,13 +325,13 @@ void motionCommandFilter::filterCommands(){
   switch(state_){
 
     case motionCommandFilter::STARTUP:
-      ROS_INFO_THROTTLE(0.5,"Motion filter: startup");
+      ROS_INFO_THROTTLE(5.0,"Motion filter: startup");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;
 
     case motionCommandFilter::IDLE:
-      ROS_INFO_THROTTLE(0.5,"Motion filter: idle");
+      ROS_INFO_THROTTLE(5.0,"Motion filter: idle");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;
@@ -446,6 +455,12 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   u_cmd = -sat(u_back_cmd_max_*(1 - ((backup_lookahead_dist_ -  distance)/backup_lookahead_dist_)), 0.05, u_back_cmd_max_);
   u_cmd = sat(u_cmd + (yaw_error_k_/2.0)*abs(lookahead_angle_error), -u_back_cmd_max_, -.05);
+
+  if(backup_obstacle_){
+    ROS_INFO_THROTTLE(2.0,"Motion filter: Obstacle behind vehicle during backup maneuver.");
+    u_cmd = 0.0;
+    yawrate_cmd = 0.0;
+  }
 
   geometry_msgs::Twist backup_cmd;
   backup_cmd.linear.x = u_cmd;

@@ -23,6 +23,7 @@
 #include <marble_guidance/TrajList.h>
 #include <marble_guidance/MotionCmd.h>
 #include <marble_guidance/HuskySafety.h>
+#include <marble_guidance/BackupStatus.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -49,7 +50,7 @@ class motionCommandFilter {
     void pathMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
-    void backupCmdCb(const std_msgs::BoolConstPtr& msg);
+    void backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);

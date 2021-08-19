@@ -60,9 +60,11 @@ void backupDetector::init() {
   fs_query_center_.y = 0.0;
   fs_query_center_.z = 0.25;
   num_fs_query_points_ = num_fs_query_point_rows_*num_fs_query_point_cols_*fs_num_query_point_layers_;
+  backup_obstacle_ = false;
 
   // Generate the query points for octomap voxel lookups
   generateQueryPoints();
+
 
 }
 
@@ -177,8 +179,6 @@ void backupDetector::publishQueryPointsPcl(){
 
   pub_transformed_fs_query_point_pcl_.publish(fs_cloud_msg);
 
-
-
 }
 
 void backupDetector::octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
@@ -241,10 +241,18 @@ void backupDetector::processOctomap(){
          close_cell_indices_vec_.push_back(i);
         }
       }
-
-      // Check to make sure the area behind the vehicle is free
-
     }
+  }
+
+  backup_obstacle_ = false;
+  // Check to make sure the area behind the vehicle is free
+  for(int i=0; i < num_fs_query_points_; i++){
+    octomap::RoughOcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
+    if(current_node && current_node->getLogOdds() >= 0.0){
+      // Cell is occupied, there is an obstacle in our path
+      backup_obstacle_ =  true;
+    }
+
   }
 
   if (enable_debug_){
@@ -295,7 +303,7 @@ void backupDetector::processIMU(){
 void backupDetector::publishBackupMsg(){
   //backup_msg_.data = (close_obstacle_flag_ || bad_attitude_flag_);
   backup_status_msg_.enable_backup = (close_obstacle_flag_ || bad_attitude_flag_);
-  backup_status_msg_.backup_obstacle = backup_obstacle;
+  backup_status_msg_.backup_obstacle = backup_obstacle_;
   pub_backup_.publish(backup_status_msg_);
 }
 

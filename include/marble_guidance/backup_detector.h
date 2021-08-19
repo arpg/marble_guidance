@@ -133,6 +133,8 @@ class backupDetector{
     int num_fs_query_point_layers_;
     double num_fs_query_points_;
 
+    bool backup_obstacle_;
+
 };
 
 } // namespace
