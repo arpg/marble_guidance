@@ -172,11 +172,9 @@ void backupDetector::processOctomap(){
       occupied_cell_indices_vec_.push_back(i);
       // Check if the occupied cell is within our safety cylinder
       voxel_radius = sqrt(pow(query_point_vec_[i].x, 2) + pow(query_point_vec_[i].y, 2));
-      if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_){
-        if(query_point_vec_[i].z > safety_z_min_ && query_point_vec_[i].z < safety_z_max_){
-         close_obstacle_flag_ = true;
-         close_cell_indices_vec_.push_back(i);
-        }
+      if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_ && query_point_vec_[i].z < safety_z_max_){
+        close_obstacle_flag_ = true;
+        close_cell_indices_vec_.push_back(i);
       }
     }
   }
