@@ -25,6 +25,7 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>pcl_conversions</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>rough_octomap</build_depend>
   <!-- <build_depend>lcd_pkg</build_depend> -->
 
   <build_export_depend>geometry_msgs</build_export_depend>
@@ -42,5 +43,6 @@
   <exec_depend>pcl_ros</exec_depend>
   <exec_depend>pcl_conversions</exec_depend>
   <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>rough_octomap</exec_depend>
 
 </package>

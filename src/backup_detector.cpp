@@ -51,7 +51,7 @@ void backupDetector::init() {
   query_point_spacing_ = resolution_;
 
   // Merged OcTree
-  occupancyTree_ = new octomap::OcTree(resolution_);
+  occupancyTree_ = new octomap::RoughOcTree(resolution_);
 
   backup_status_msg_.enable_backup = false;
   backup_status_msg_.backup_obstacle = false;
@@ -184,10 +184,10 @@ void backupDetector::publishQueryPointsPcl(){
 void backupDetector::octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
 {
   if(!have_octomap_) have_octomap_ = true;
-  //ROS_INFO("Occupancy octomap callback called");
+  // ROS_INFO("Occupancy octomap callback called");
   if (msg->data.size() == 0) return;
   delete occupancyTree_;
-  occupancyTree_ = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(*msg);
+  occupancyTree_ = (octomap::RoughOcTree*)octomap_msgs::binaryMsgToMap(*msg);
 }
 
 void backupDetector::imuCb(const sensor_msgs::ImuConstPtr& imu_msg){
@@ -228,7 +228,7 @@ void backupDetector::processOctomap(){
   close_obstacle_flag_ = false;
 
   for(int i = 0; i < num_query_points_; i++){
-    octomap::OcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
+    octomap::RoughOcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
     if(current_node && current_node->getLogOdds() >= 0.0){
       // Cell is occupied, need to track the index
       occupied_cell_indices_vec_.push_back(i);

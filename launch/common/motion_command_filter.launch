@@ -7,7 +7,7 @@
   <arg name="max_forward_speed"         default="1.0" />
   <arg name="yaw_error_k"         default="1.0" />
 
-  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
+  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance">
 
     <remap from="motion_command_filter/odometry"      to="odometry"/>
     <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
@@ -18,6 +18,7 @@
     <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
     <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
+    <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
@@ -41,6 +42,9 @@
     <!-- Safety params -->
     <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
     <param name="close_side_speed"                value="0.1"/>
+
+    <param name="beacon_clear_motion_duration"    value="2.0"/>
+
 
   </node>
 
