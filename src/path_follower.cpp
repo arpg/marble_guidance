@@ -132,6 +132,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     // Find the lookahead point on the current path
     vector<geometry_msgs::PoseStamped> path_poses = path.poses;
     int l = path_poses.size();
+    goal_point_ = path_poses[l-1].pose.position;
 
     if(!l){
       ROS_INFO_THROTTLE(1.0, "Empty path...");
@@ -169,7 +170,6 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
         }
       }
     }
-
   }
 
   return have_lookahead;
@@ -235,6 +235,7 @@ void pathFollower::publishMotionCmd(){
   path_motion_cmd_msg_.cmd_vel = cmd_vel_msg_;
   path_motion_cmd_msg_.motion_type = turn_in_place_;
   path_motion_cmd_msg_.lookahead_point = lookahead_pose_.position;
+  path_motion_cmd_msg_.goal_point = goal_point_;
 
   pub_motion_cmd_.publish(path_motion_cmd_msg_);
 

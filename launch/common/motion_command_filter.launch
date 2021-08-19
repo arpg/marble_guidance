@@ -1,13 +1,13 @@
 <launch>
 
-  <arg name="vehicle_name" default="X1"/>
+  <arg name="vehicle_name" default="D01"/>
   <arg name="cmd_vel_topic" default="cmd_vel"/>
   <arg name="enable_husky_safety"     default="false"/>
   <arg name="max_yawrate"         default=".75" />
   <arg name="max_forward_speed"         default="1.0" />
   <arg name="yaw_error_k"         default="1.0" />
 
-  <arg name="is_spot"             default="false"/>
+  <arg name="is_spot"             default="true"/>
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
@@ -21,6 +21,7 @@
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
     <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
     <remap from="motion_command_filter/beacon_drop_cmd"   to="beacon"/>
+    <remap from="motion_command_filter/stair_mode_cmd"    to="is_near_stair"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
@@ -48,6 +49,9 @@
     <param name="beacon_clear_motion_duration"    value="1.0"/>
     <param name="is_spot"                         value="$(arg is_spot)"/>
 
+    <param name="stair_mode_pitch_thresh"         value=".1"/>
+    <param name="stair_align_thresh"              value=".8"/>
+    <param name="stair_turnaround_thresh"         value=".15"/>
 
   </node>
 

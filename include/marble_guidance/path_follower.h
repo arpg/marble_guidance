@@ -81,6 +81,7 @@ class pathFollower{
     float lookahead_dist_;
     double lookahead_dist_thresh_;
     geometry_msgs::PointStamped lookahead_point_msg_;
+    geometry_msgs::Point goal_point_;
 
     nav_msgs::Odometry current_odom_;
     geometry_msgs::Point current_pos_;

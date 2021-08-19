@@ -223,6 +223,11 @@ class motionCommandFilter {
     double stair_turnaround_thresh_;
     bool do_stair_align_;
     bool do_stair_turnaround_;
+    bool started_stairs_;
+    geometry_msgs::Point path_goal_point_;
+    geometry_msgs::Point last_path_goal_point_;
+    bool have_new_path_;
+
 
     std_srvs::SetBool stair_mode_srv_;
 
