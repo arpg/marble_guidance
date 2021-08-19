@@ -34,6 +34,7 @@
 #include <math.h>
 
 #include <std_srvs/Trigger.h>
+#include <std_srvs/SetBool.h>
 
 
 using namespace std;
@@ -57,6 +58,7 @@ class motionCommandFilter {
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
     void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
+    void stairModeCb(const std_msgs::BoolConstPtr& msg);
     void filterCommands();
     void lowpassFilterCommands(const geometry_msgs::Twist new_command);
     void publishCommands();
@@ -64,6 +66,7 @@ class motionCommandFilter {
     void determineMotionState();
     geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
     bool isUpstairs(const geometry_msgs::Point lookahead_point);
+    bool checkStairProgress();
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
@@ -111,6 +114,8 @@ class motionCommandFilter {
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_cmd_vel_stamped_;
+
+    ros::ServiceClient stair_mode_client_;
 
     string vehicle_name_;
     int loop_rate_;
@@ -218,6 +223,8 @@ class motionCommandFilter {
     double stair_turnaround_thresh_;
     bool do_stair_align_;
     bool do_stair_turnaround_;
+
+    std_srvs::SetBool stair_mode_srv_;
 
 
 
