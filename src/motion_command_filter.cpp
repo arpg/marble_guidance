@@ -238,13 +238,16 @@ void motionCommandFilter::determineMotionState(){
           // sendTriggerRequest("stair_mode_on");
 
           stair_mode_srv_.request.data = true;
-          if(stair_mode_client_.call(stair_mode_srv_)){
+          if(stair_mode_client_.call(stair_mode_srv_) || true){
             state_ = motionCommandFilter::STAIR_MODE_UP;
             ROS_INFO("Motion filter: Spot stair mode engaged.");
             float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
             float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
             if(abs(wrapAngle(relative_lookahead_heading - current_yaw_)) > stair_align_thresh_){
+              ROS_INFO("DO STAIR ALIGN");
               do_stair_align_ = true;
+            } else {
+              ROS_INFO("NOT ALIGNING");
             }
           } else {
             ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode engage failed...");
@@ -332,14 +335,17 @@ void motionCommandFilter::determineMotionState(){
       // Need to go up the stairs, but do not need to turn around first
 
       if(do_stair_align_){
+        ROS_INFO_THROTTLE(1.0,"ALIGNING WITH THE STAIRS...");
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
         float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
 
         if(abs(wrapAngle(relative_lookahead_heading - current_yaw_ )) < stair_align_thresh_){
           do_stair_align_ = false;
+          ROS_INFO("ALIGNING WITH STAIRS COMPLETE");
         }
       } else {
         if(checkStairProgress()){
+          ROS_INFO("TOP OF STAIRS REACHED, EXITING STAIR MODE UP");
           state_ = motionCommandFilter::IDLE;
           stair_mode_srv_.request.data = false;
           if(stair_mode_client_.call(stair_mode_srv_)){
