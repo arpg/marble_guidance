@@ -11,7 +11,7 @@
   <arg name="sim"                   default="false"/>
   <arg name="path_topic"            default="scan_plan_node/path_out"/>
 
-  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance">
+  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
 
     <remap from="path_follower/odometry"        to="odometry"/>
     <remap from="path_follower/path"            to="$(arg path_topic)"/>
@@ -27,12 +27,12 @@
     <param name="max_forward_speed"               value="$(arg max_forward_speed)"/>
     <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
     <param name="turn_in_place_thresh"            value="1.5"/>
-    <param name="turn_in_place_thresh"            value="0.1"/>
+    <param name="end_turn_in_place_thresh"        value="0.1"/>
     <param name="turn_in_place_yawrate"           value="0.5"/>
     <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
     <param name="enable_speed_regulation"         value="true"/>
-    <param name="stopping_distance"               value="0.5"/>
-    <param name="slow_down_distance"              value="1.0"/>
+    <param name="stopping_distance"               value="0.4"/>
+    <param name="slow_down_distance"              value="0.65"/>
     <param name="sim_start"                       value="$(arg sim)"/>
 
   </node>

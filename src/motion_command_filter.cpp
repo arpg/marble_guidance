@@ -479,7 +479,7 @@ void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_c
   // We want different filters for speeding up vs slowing down
     bool backup = ( state_ == motionCommandFilter::PATH_BACKUP || state_ == motionCommandFilter::TRAJ_BACKUP);
     float back_const_up_ = .75;
-    float back_const_down_ = .95;
+    float back_const_down_ = .85;
     if(new_command.linear.x > last_forward_speed_){
       if(!backup){
         control_command_msg_.linear.x = u_cmd_lp_filt_const_up_*last_forward_speed_ + (1.0 - u_cmd_lp_filt_const_up_)*new_command.linear.x;

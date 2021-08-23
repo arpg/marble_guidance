@@ -220,7 +220,7 @@ void pathFollower::computeControlCommands(){
       ROS_INFO_THROTTLE(.25,"%f -- Max, %f -- Lookahead_dist", u_cmd_max_, dist);
       ROS_INFO_THROTTLE(.25,"%f -- Slowdown from lookahead", u_cmd_);
       if(enable_speed_regulation_){
-        u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
+        u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.01, u_cmd_max_);
       }
       ROS_INFO_THROTTLE(.25,"%f -- Regulation from yaw error", u_cmd_);
     } else {
