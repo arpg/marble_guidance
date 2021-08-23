@@ -93,6 +93,7 @@ class pathFollower{
     float yawrate_cmd_;
     double yawrate_max_;
     double turn_in_place_thresh_;
+    double end_turn_in_place_thresh_;
     double turn_in_place_yawrate_;
     bool turn_in_place_;
     geometry_msgs::Twist cmd_vel_msg_;
