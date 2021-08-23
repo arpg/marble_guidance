@@ -134,7 +134,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     int l = path_poses.size();
 
     if(!l){
-      ROS_INFO_THROTTLE(1.0, "Empty path...");
+      ROS_INFO_THROTTLE(5.0, "Empty path...");
       return false;
     }
 
@@ -155,7 +155,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
 
       if(i == 0){
-        ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
+        ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
         if(dist <= 2.0*lookahead_dist_thresh_){
 
@@ -232,7 +232,7 @@ void pathFollower::computeControlCommands(){
       yawrate_cmd_ = 0.0;
     }
   } else {
-    ROS_INFO_THROTTLE(1.0,"Do not have a current lookahead point.");
+    ROS_INFO_THROTTLE(5.0,"Do not have a current lookahead point.");
     u_cmd_ = 0.0;
     yawrate_cmd_ = 0.0;
   }
