@@ -280,11 +280,11 @@ void motionCommandFilter::determineMotionState(){
         if(isUpstairs(path_goal_point_)){
           ROS_INFO("ENTERING STAIR MODE UP");
           is_up_stairs_ = false;
-          // sendTriggerRequest("stair_mode_on");
+          //sendTriggerRequest("stair_mode_on");
 
-          //stair_mode_srv_.request.data = true;
-          // if(stair_mode_client_.call(stair_mode_srv_) || true){
-          sendTriggerRequest("stair_mode_on");
+          stair_mode_srv_.request.data = true;
+          stair_mode_client_.call(stair_mode_srv_);
+          //sendTriggerRequest("stair_mode_on");
           if(true){
             state_ = motionCommandFilter::STAIR_MODE_UP;
             started_stairs_ = false;
@@ -401,8 +401,8 @@ void motionCommandFilter::determineMotionState(){
           state_ = motionCommandFilter::IDLE;
           have_new_path_ = false;
           stair_mode_srv_.request.data = false;
-          //if(stair_mode_client_.call(stair_mode_srv_)){
-          sendTriggerRequest("stair_mode_off");
+          stair_mode_client_.call(stair_mode_srv_);
+          // sendTriggerRequest("stair_mode_off");
           if(true){
             ROS_INFO("Motion filter: Spot stair mode disengaged.");
           } else {
