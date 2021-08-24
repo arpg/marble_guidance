@@ -26,8 +26,8 @@ void motionCommandFilter::init() {
 
     stair_mode_on_  =  nh_.serviceClient<std_srvs::Trigger>("spot/stairs_mode_on");
     stair_mode_off_  =  nh_.serviceClient<std_srvs::Trigger>("spot/stairs_mode_off");
-    clients_.insert(std::make_pair("stair_mode_on", client_stair_mode_on));
-    clients_.insert(std::make_pair("stair_mode_off", client_stair_mode_off));
+    clients_.insert(std::make_pair("stair_mode_on", stair_mode_on_));
+    clients_.insert(std::make_pair("stair_mode_off", stair_mode_off_));
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);

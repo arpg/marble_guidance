@@ -221,7 +221,7 @@ class motionCommandFilter {
     double stair_mode_pitch_thresh_;
 
     bool is_up_stairs_;
-    std::map< std::string, ros::ServiceClient > _clients;
+    std::map< std::string, ros::ServiceClient > clients_;
 
     double stair_align_thresh_;
     double stair_turnaround_thresh_;
