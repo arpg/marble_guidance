@@ -96,6 +96,7 @@ class motionCommandFilter {
     ros::NodeHandle priv_nh;
 
     bool sendTriggerRequest(std::string type);
+    std::map< std::string, ros::ServiceClient > _clients;
 
     std::string node_name_{"node_name"};
 
@@ -116,6 +117,9 @@ class motionCommandFilter {
     ros::Publisher pub_cmd_vel_stamped_;
 
     ros::ServiceClient stair_mode_client_;
+
+    ros::ServiceClient stair_mode_on_;
+    ros::ServiceClient stair_mode_off_;
 
     string vehicle_name_;
     int loop_rate_;

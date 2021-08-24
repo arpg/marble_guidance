@@ -24,6 +24,11 @@ void motionCommandFilter::init() {
 
     stair_mode_client_ = nh_.serviceClient<std_srvs::SetBool>("stair_mode");
 
+    stair_mode_on_  =  nh_.serviceClient<std_srvs::Trigger>("spot/stairs_mode_on");
+    stair_mode_off_  =  nh_.serviceClient<std_srvs::Trigger>("spot/stairs_mode_off");
+    clients_.insert(std::make_pair("stair_mode_on", client_stair_mode_on));
+    clients_.insert(std::make_pair("stair_mode_off", client_stair_mode_off));
+
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
@@ -84,6 +89,28 @@ void motionCommandFilter::init() {
     path_goal_point_.z = 0.0;
     last_path_goal_point_ = path_goal_point_;
 
+}
+
+bool motionCommandFilter::sendTriggerRequest(std::string type){
+    try{
+      auto client = _clients.at(type);
+      std_srvs::Trigger request;
+      bool response = client.call(request);
+      //wait for service to be ready
+      client.waitForExistence(ros::Duration(10));
+      std::string good_claim = type + " successful";
+      std::string bad_claim = type + " faild";
+      if (response){
+          ROS_INFO("Response: %s\n", good_claim.c_str());
+          return true;
+        } else{
+          ROS_INFO("Response: %s\n", bad_claim.c_str());
+        }
+    }
+    catch(std::out_of_range& e){
+      ROS_ERROR("Client not found!");
+    }
+    return false;
 }
 
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
@@ -255,8 +282,10 @@ void motionCommandFilter::determineMotionState(){
           is_up_stairs_ = false;
           // sendTriggerRequest("stair_mode_on");
 
-          stair_mode_srv_.request.data = true;
-          if(stair_mode_client_.call(stair_mode_srv_) || true){
+          //stair_mode_srv_.request.data = true;
+          // if(stair_mode_client_.call(stair_mode_srv_) || true){
+          sendTriggerRequest("stair_mode_on");
+          if(true){
             state_ = motionCommandFilter::STAIR_MODE_UP;
             started_stairs_ = false;
             ROS_INFO("Motion filter: Spot stair mode engaged.");
@@ -372,7 +401,9 @@ void motionCommandFilter::determineMotionState(){
           state_ = motionCommandFilter::IDLE;
           have_new_path_ = false;
           stair_mode_srv_.request.data = false;
-          if(stair_mode_client_.call(stair_mode_srv_)){
+          //if(stair_mode_client_.call(stair_mode_srv_)){
+          sendTriggerRequest("stair_mode_off");
+          if(true){
             ROS_INFO("Motion filter: Spot stair mode disengaged.");
           } else {
             ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
