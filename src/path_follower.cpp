@@ -132,7 +132,9 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     // Find the lookahead point on the current path
     vector<geometry_msgs::PoseStamped> path_poses = path.poses;
     int l = path_poses.size();
-    goal_point_ = path_poses[l-1].pose.position;
+    if(l){
+      goal_point_ = path_poses[l-1].pose.position;
+    }
 
     if(!l){
       ROS_INFO_THROTTLE(1.0, "Empty path...");
@@ -242,10 +244,10 @@ void pathFollower::publishMotionCmd(){
 }
 
 void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
-
   current_path_ = *path_msg;
   if(!have_path_) have_path_ = true;
-  if(!new_path_){
+
+  if(!new_path_){	    
     if(current_path_.poses.size()){
       new_path_ = true;
     }

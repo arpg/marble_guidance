@@ -12,7 +12,7 @@
   <arg name="path_topic"            default="scan_plan_node/path_out"/>
 <arg name="launch_prefix" default="gdb -ex run --args"/>
 
-  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" launch-prefix="gdb -ex run --args">
+  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance">
 
     <remap from="path_follower/odometry"        to="odometry"/>
     <remap from="path_follower/path"            to="$(arg path_topic)"/>

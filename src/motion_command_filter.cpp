@@ -64,6 +64,8 @@ void motionCommandFilter::init() {
     a_fwd_motion_ = 0;
     a_turnaround_ = 1;
 
+    beacon_drop_cmd_ = false;
+    stair_mode_cmd_ = false;
     estop_cmd_ = false;
     enable_trajectory_following_ = false;
     enable_backup_ = false;
@@ -283,9 +285,10 @@ void motionCommandFilter::determineMotionState(){
           //sendTriggerRequest("stair_mode_on");
 
           stair_mode_srv_.request.data = true;
-          stair_mode_client_.call(stair_mode_srv_);
-          //sendTriggerRequest("stair_mode_on");
+          //stair_mode_client_.call(stair_mode_srv_);
+          sendTriggerRequest("stair_mode_on");
           if(true){
+          //if(stair_mode_client_.call(stair_mode_srv_)){
             state_ = motionCommandFilter::STAIR_MODE_UP;
             started_stairs_ = false;
             ROS_INFO("Motion filter: Spot stair mode engaged.");
@@ -401,9 +404,10 @@ void motionCommandFilter::determineMotionState(){
           state_ = motionCommandFilter::IDLE;
           have_new_path_ = false;
           stair_mode_srv_.request.data = false;
-          stair_mode_client_.call(stair_mode_srv_);
-          // sendTriggerRequest("stair_mode_off");
+          //stair_mode_client_.call(stair_mode_srv_);
+          sendTriggerRequest("stair_mode_off");
           if(true){
+          //if(true || stair_mode_client_.call(stair_mode_srv_)){
             ROS_INFO("Motion filter: Spot stair mode disengaged.");
           } else {
             ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
@@ -432,11 +436,13 @@ void motionCommandFilter::determineMotionState(){
         if(checkStairProgress()){
           state_ = motionCommandFilter::IDLE;
           stair_mode_srv_.request.data = false;
-          if(stair_mode_client_.call(stair_mode_srv_)){
+	  sendTriggerRequest("stair_mode_off");
+          if(true || stair_mode_client_.call(stair_mode_srv_)){
             ROS_INFO("Motion filter: Spot stair mode disengaged.");
           } else {
             ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
-          }             }
+          }             
+	}
 
         // If the path changes to going up the stairs, just follow it up
         if(isUpstairs(path_goal_point_)){
