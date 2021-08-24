@@ -22,7 +22,7 @@ void motionCommandFilter::init() {
     sub_beacon_cmd_ = nh_.subscribe("beacon_drop_cmd", 1, &motionCommandFilter::beaconDropCb, this);
     sub_stair_mode_ = nh_.subscribe("stair_mode_cmd", 1, &motionCommandFilter::stairModeCb, this);
 
-    stair_mode_client_ = nh_.serviceClient<std_srvs::SetBool>("stair_mode");
+    stair_mode_client_ = nh_.serviceClient<std_srvs::SetBool>("spot/stair_mode");
 
     stair_mode_on_  =  nh_.serviceClient<std_srvs::Trigger>("spot/stairs_mode_on");
     stair_mode_off_  =  nh_.serviceClient<std_srvs::Trigger>("spot/stairs_mode_off");
