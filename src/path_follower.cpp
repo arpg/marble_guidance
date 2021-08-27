@@ -134,7 +134,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     int l = path_poses.size();
 
     if(!l){
-      ROS_INFO_THROTTLE(5.0, "Empty path...");
+      //ROS_INFO_THROTTLE(5.0, "Empty path...");
       return false;
     }
 
@@ -155,7 +155,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
 
       if(i == 0){
-        ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
+        //ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
         if(dist <= 2.0*lookahead_dist_thresh_){
 
@@ -217,12 +217,12 @@ void pathFollower::computeControlCommands(){
     if(!turn_in_place_){
       // Slow down if we are approaching the lookahead point
       u_cmd_ = sat(u_cmd_max_*(1.0 - sat( (slow_down_dist_ -  dist)/slow_down_dist_, 0.0, 1.0) ), 0.0, u_cmd_max_);
-      ROS_INFO_THROTTLE(.25,"%f -- Max, %f -- Lookahead_dist", u_cmd_max_, dist);
-      ROS_INFO_THROTTLE(.25,"%f -- Slowdown from lookahead", u_cmd_);
+      //ROS_INFO_THROTTLE(.25,"%f -- Max, %f -- Lookahead_dist", u_cmd_max_, dist);
+      //ROS_INFO_THROTTLE(.25,"%f -- Slowdown from lookahead", u_cmd_);
       if(enable_speed_regulation_){
         u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.01, u_cmd_max_);
       }
-      ROS_INFO_THROTTLE(.25,"%f -- Regulation from yaw error", u_cmd_);
+      //ROS_INFO_THROTTLE(.25,"%f -- Regulation from yaw error", u_cmd_);
     } else {
       u_cmd_ = 0.0;
     }
@@ -232,7 +232,7 @@ void pathFollower::computeControlCommands(){
       yawrate_cmd_ = 0.0;
     }
   } else {
-    ROS_INFO_THROTTLE(5.0,"Do not have a current lookahead point.");
+    //ROS_INFO_THROTTLE(5.0,"Do not have a current lookahead point.");
     u_cmd_ = 0.0;
     yawrate_cmd_ = 0.0;
   }

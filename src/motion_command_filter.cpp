@@ -23,6 +23,7 @@ void motionCommandFilter::init() {
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    pub_beacon_deploy_ = nh_.advertise<std_msgs::Bool>("deploy",1);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
@@ -46,6 +47,7 @@ void motionCommandFilter::init() {
     pnh_.param("close_side_speed", close_side_speed_, .1);
 
     pnh_.param("beacon_clear_motion_duration", beacon_clear_motion_duration_, 1.0);
+    pnh_.param("beacon_drop_motion_settle_duration", beacon_drop_motion_settle_dur_, 2.0);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
@@ -64,6 +66,7 @@ void motionCommandFilter::init() {
     enable_yaw_rate_filtering_ = true;
 
     backup_turn_thresh_ = 1.5707;
+    deploy_beacon_ = true;
 
 }
 
@@ -268,11 +271,17 @@ void motionCommandFilter::determineMotionState(){
       break;
 
     case motionCommandFilter::BEACON_DROP:
-      // If we are in the beacon drop state, wait for the beacon to drop
-      if(!beacon_drop_cmd_){
-        state_ = motionCommandFilter::BEACON_MOTION;
-        started_beacon_clear_motion_ = false;
+      // If we are in the beacon drop state, check if we can place the beacon
+      // off of the current trajectory
+
+      if(beacon_drop_complete_){
+        state_ = motionCommandFilter::IDLE;
       }
+
+      // if(!beacon_drop_cmd_){
+      //   state_ = motionCommandFilter::BEACON_MOTION;
+      //   started_beacon_clear_motion_ = false;
+      // }
       break;
 
     case motionCommandFilter::BEACON_MOTION:
@@ -302,11 +311,15 @@ void motionCommandFilter::determineMotionState(){
 
   if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP)){
     state_ = motionCommandFilter::BEACON_DROP;
+    beacon_drop_start_time_ = ros::Time::now();
+    beacon_drop_complete_ = false;
+    beacon_drop_cmd_ = false;
+    start_beacon_drop_turn_ = false;
+    have_initial_settle_time_ = false;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
     pub_cmd_vel_.publish(control_command_msg_);
   }
-
 
 }
 
@@ -403,8 +416,7 @@ void motionCommandFilter::filterCommands(){
 
     case motionCommandFilter::BEACON_DROP:
       ROS_INFO_THROTTLE(5.0, "Motion filter: beacon drop");
-      control_command_msg_.linear.x = 0.0;
-      control_command_msg_.angular.z = 0.0;
+      computeBeaconDropMotionCmds();
       break;
 
     case motionCommandFilter::BEACON_MOTION:
@@ -458,6 +470,52 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   return backup_cmd;
 
+}
+
+void motionCommandFilter::computeBeaconDropMotionCmds(){
+  // First, check to see how much space we have around us.
+  // For now, just use the backup detector
+
+  // A better option would be to figure out which side we are
+  // close to a wall on, and do a 30 degree turn prior to dropping.
+  control_command_msg_.linear.x = 0.0;
+  control_command_msg_.angular.z = 0.0;
+  if(enable_backup_){
+    // We are alreay close to a wall, just drop the beacon
+    // Give the vehicle a few seconds to settle to a stop.
+    float dur = (ros::Time::now() - beacon_drop_start_time_).to_sec();
+    if(dur >= beacon_drop_motion_settle_dur_){
+      pub_beacon_deploy_.publish(deploy_beacon_);
+      beacon_drop_complete_ = true;
+    }
+
+  } else {
+    // We have enough room to do a 90 degree turn
+
+    // Get the current heading angle
+    if(start_beacon_drop_turn_){
+      start_beacon_drop_turn_ = true;
+      goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
+    }
+
+    float heading_error = goal_heading - current_heading_;
+    if(abs(heading_error) >= .1){
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = heading_error*yawrate_k0_;
+    } else {
+      // We have finished turning, wait for the vehicle to settle
+      if(!have_initial_settle_time_){
+        beacon_drop_start_time_ = ros::Time::now();
+        have_initial_settle_time_ = true;
+      }
+      float dur2 = (ros::Time::now() - beacon_drop_start_time_).to_sec();
+      if(dur2 >= beacon_drop_motion_settle_dur_){
+        pub_beacon_deploy_.publish(deploy_beacon_);
+        beacon_drop_complete_ = true;
+      }
+    }
+
+  }
 }
 
 void motionCommandFilter::publishCommands(){
