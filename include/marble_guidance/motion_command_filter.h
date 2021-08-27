@@ -59,7 +59,7 @@ class motionCommandFilter {
     void publishCommands();
     void checkConnections();
     void determineMotionState();
-    boid computeBeaconDropMotionCmds();
+    void computeBeaconDropMotionCmds();
     geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
@@ -116,7 +116,7 @@ class motionCommandFilter {
     geometry_msgs::Point current_pos_;
     double current_roll_;
     double current_pitch_;
-    double current_yaw_;
+    double current_heading_;
 
     // pathMotionCmdCb
     bool have_path_motion_cmd_;
@@ -201,8 +201,10 @@ class motionCommandFilter {
     bool beacon_drop_complete_;
     std_msgs::Bool deploy_beacon_;
     ros::Time beacon_drop_start_time_;
+    bool have_initial_settle_time_;
     double beacon_drop_motion_settle_dur_;
-    double yawrate_k0_;
+    bool start_beacon_drop_turn_;
+    float goal_heading_;
 
 
 }; // class SimpleNodeClass

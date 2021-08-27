@@ -66,7 +66,7 @@ void motionCommandFilter::init() {
     enable_yaw_rate_filtering_ = true;
 
     backup_turn_thresh_ = 1.5707;
-    deploy_beacon_ = true;
+    deploy_beacon_.data = true;
 
 }
 
@@ -79,7 +79,7 @@ void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
   geometry_msgs::Quaternion vehicle_quat_msg = current_odom_.pose.pose.orientation;
   tf::Quaternion vehicle_quat_tf;
   tf::quaternionMsgToTF(vehicle_quat_msg, vehicle_quat_tf);
-  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_yaw_);
+  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_heading_);
 
 }
 
@@ -194,7 +194,7 @@ void motionCommandFilter::determineMotionState(){
       // switch to backup path following
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
-        float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+        float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
         //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
         //ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
         //ROS_INFO("")
@@ -237,7 +237,7 @@ void motionCommandFilter::determineMotionState(){
         state_ = motionCommandFilter::PATH_TURN_AROUND;
       }
       float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
-      float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+      float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
       if(abs(relative_heading_error) < M_PI/2.0){
         // The path has switched and is now in front of us
         // No need to backup any further or turn around in palce
@@ -446,7 +446,7 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   // Create a yaw rate command from the heading error to the lookahead point
   float relative_lookahead_heading = atan2((lookahead.y - current_pos_.y), (lookahead.x - current_pos_.x));
-  float lookahead_angle_error = wrapAngle(relative_lookahead_heading - (current_yaw_ + M_PI));
+  float lookahead_angle_error = wrapAngle(relative_lookahead_heading - (current_heading_ + M_PI));
   float distance = dist(current_pos_, lookahead);
   //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
 
@@ -483,7 +483,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
   if(enable_backup_){
     // We are alreay close to a wall, just drop the beacon
     // Give the vehicle a few seconds to settle to a stop.
-    float dur = (ros::Time::now() - beacon_drop_start_time_).to_sec();
+    float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
     if(dur >= beacon_drop_motion_settle_dur_){
       pub_beacon_deploy_.publish(deploy_beacon_);
       beacon_drop_complete_ = true;
@@ -498,7 +498,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
       goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
     }
 
-    float heading_error = goal_heading - current_heading_;
+    float heading_error = goal_heading_ - current_heading_;
     if(abs(heading_error) >= .1){
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = heading_error*yawrate_k0_;
@@ -508,7 +508,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
         beacon_drop_start_time_ = ros::Time::now();
         have_initial_settle_time_ = true;
       }
-      float dur2 = (ros::Time::now() - beacon_drop_start_time_).to_sec();
+      float dur2 = (ros::Time::now() - beacon_drop_start_time_).toSec();
       if(dur2 >= beacon_drop_motion_settle_dur_){
         pub_beacon_deploy_.publish(deploy_beacon_);
         beacon_drop_complete_ = true;
