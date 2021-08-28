@@ -24,6 +24,7 @@ void motionCommandFilter::init() {
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_beacon_deploy_ = nh_.advertise<std_msgs::Bool>("deploy",1);
+    pub_beacon_deploy_virtual_ = nh_.advertise<std_msgs::Empty>("deploy_virtual",1);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
@@ -486,6 +487,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
     float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
     if(dur >= beacon_drop_motion_settle_dur_){
       pub_beacon_deploy_.publish(deploy_beacon_);
+      pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
       beacon_drop_complete_ = true;
     }
 
@@ -511,6 +513,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
       float dur2 = (ros::Time::now() - beacon_drop_start_time_).toSec();
       if(dur2 >= beacon_drop_motion_settle_dur_){
         pub_beacon_deploy_.publish(deploy_beacon_);
+        pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
         beacon_drop_complete_ = true;
       }
     }

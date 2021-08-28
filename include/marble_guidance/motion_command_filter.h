@@ -13,6 +13,7 @@
 #include <boost/circular_buffer.hpp>
 
 #include <std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
@@ -103,6 +104,7 @@ class motionCommandFilter {
     ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_cmd_vel_stamped_;
     ros::Publisher pub_beacon_deploy_;
+    ros::Publisher pub_beacon_deploy_virtual_;
 
     string vehicle_name_;
     int loop_rate_;
@@ -200,6 +202,7 @@ class motionCommandFilter {
 
     bool beacon_drop_complete_;
     std_msgs::Bool deploy_beacon_;
+    std_msgs::Empty deploy_beacon_virtual_;
     ros::Time beacon_drop_start_time_;
     bool have_initial_settle_time_;
     double beacon_drop_motion_settle_dur_;
