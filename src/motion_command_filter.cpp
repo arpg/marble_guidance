@@ -483,7 +483,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
   // close to a wall on, and do a 30 degree turn prior to dropping.
   control_command_msg_.linear.x = 0.0;
   control_command_msg_.angular.z = 0.0;
-  
+
   if(enable_backup_){
     // We are alreay close to a wall, just drop the beacon
     // Give the vehicle a few seconds to settle to a stop.
@@ -503,7 +503,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
       goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
     }
 
-    float heading_error = goal_heading_ - current_heading_;
+    float heading_error = wrapAngle(goal_heading_ - current_heading_);
     if(abs(heading_error) >= .1){
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = heading_error*yawrate_k0_;
@@ -597,6 +597,10 @@ float motionCommandFilter::wrapAngle(float angle){
         angle += 2*M_PI;
     }
     return angle;
+}
+
+float motionCommandFilter::getShortestAngle(float target_angle, float current_angle){
+  float a = target_angle - current_angle;
 }
 
 float motionCommandFilter::sat(float num, float min_val, float max_val){
