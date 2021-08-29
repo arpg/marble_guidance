@@ -49,6 +49,7 @@ void motionCommandFilter::init() {
 
     pnh_.param("beacon_clear_motion_duration", beacon_clear_motion_duration_, 1.0);
     pnh_.param("beacon_drop_motion_settle_duration", beacon_drop_motion_settle_dur_, 2.0);
+    pnh_.param("close_beacon_turn_angle", close_beacon_turn_angle_, 0.5);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
@@ -105,8 +106,10 @@ void motionCommandFilter::followTrajCb(const std_msgs::BoolConstPtr& msg){
   enable_trajectory_following_ = msg->data;
 }
 
-void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
-  enable_backup_ = msg->data;
+void motionCommandFilter::backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg){
+  enable_backup_ = msg->enable_backup;
+  backup_close_on_left_ = msg->close_on_left;
+  backup_close_on_right_ = msg->close_on_right;
 }
 
 void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
@@ -319,6 +322,7 @@ void motionCommandFilter::determineMotionState(){
     beacon_drop_cmd_ = false;
     start_beacon_drop_turn_ = false;
     have_initial_settle_time_ = false;
+    have_target_heading_ = false;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
     pub_cmd_vel_.publish(control_command_msg_);
@@ -484,45 +488,43 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
   control_command_msg_.linear.x = 0.0;
   control_command_msg_.angular.z = 0.0;
 
-  if(enable_backup_){
-    // We are alreay close to a wall, just drop the beacon
-    // Give the vehicle a few seconds to settle to a stop.
+  if(!have_target_heading_){
+
+    if(enable_backup_){
+      // We are already close to a wall, just drop the beacon
+      // Give the vehicle a few seconds to settle to a stop.
+      if(backup_close_on_left_){
+        // We are close to an obstacle on the left, only turn 30 degrees cw
+        goal_heading_ = wrapAngle(current_heading_ - close_beacon_turn_angle_);
+      } else if(backup_close_on_right_){
+        // We are close to an obstacle on the right, only turn 30 degrees ccw
+        goal_heading_ = wrapAngle(current_heading_ + close_beacon_turn_angle_);
+      }
+
+    } else {
+      // We have enough room to do a 90 degree turn
+      goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
+    }
+
+    have_target_heading_ = true;
+  }
+
+  float heading_error = wrapAngle(goal_heading_ - current_heading_);
+  if(abs(heading_error) >= .1){
+    control_command_msg_.linear.x = 0.0;
+    control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
+  } else {
+    // We have finished turning, wait for the vehicle to settle
+    if(!have_initial_settle_time_){
+      beacon_drop_start_time_ = ros::Time::now();
+      have_initial_settle_time_ = true;
+    }
     float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
     if(dur >= beacon_drop_motion_settle_dur_){
       pub_beacon_deploy_.publish(deploy_beacon_);
       pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
       beacon_drop_complete_ = true;
     }
-
-  } else {
-    // We have enough room to do a 90 degree turn
-
-    // Figure out
-
-    // Get the current heading angle
-    if(start_beacon_drop_turn_){
-      start_beacon_drop_turn_ = true;
-      goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
-    }
-
-    float heading_error = wrapAngle(goal_heading_ - current_heading_);
-    if(abs(heading_error) >= .1){
-      control_command_msg_.linear.x = 0.0;
-      control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
-    } else {
-      // We have finished turning, wait for the vehicle to settle
-      if(!have_initial_settle_time_){
-        beacon_drop_start_time_ = ros::Time::now();
-        have_initial_settle_time_ = true;
-      }
-      float dur2 = (ros::Time::now() - beacon_drop_start_time_).toSec();
-      if(dur2 >= beacon_drop_motion_settle_dur_){
-        pub_beacon_deploy_.publish(deploy_beacon_);
-        pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
-        beacon_drop_complete_ = true;
-      }
-    }
-
   }
 }
 

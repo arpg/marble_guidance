@@ -36,6 +36,7 @@ add_message_files(
    MotionCmd.msg
    TrajList.msg
    HuskySafety.msg
+   BackupStatus.msg
    )
 
  ## Generate added messages and services with any dependencies listed here
