@@ -497,6 +497,8 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
   } else {
     // We have enough room to do a 90 degree turn
 
+    // Figure out
+
     // Get the current heading angle
     if(start_beacon_drop_turn_){
       start_beacon_drop_turn_ = true;
@@ -506,7 +508,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
     float heading_error = wrapAngle(goal_heading_ - current_heading_);
     if(abs(heading_error) >= .1){
       control_command_msg_.linear.x = 0.0;
-      control_command_msg_.angular.z = heading_error*yawrate_k0_;
+      control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
     } else {
       // We have finished turning, wait for the vehicle to settle
       if(!have_initial_settle_time_){
@@ -597,10 +599,6 @@ float motionCommandFilter::wrapAngle(float angle){
         angle += 2*M_PI;
     }
     return angle;
-}
-
-float motionCommandFilter::getShortestAngle(float target_angle, float current_angle){
-  float a = target_angle - current_angle;
 }
 
 float motionCommandFilter::sat(float num, float min_val, float max_val){
