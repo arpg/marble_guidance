@@ -323,6 +323,7 @@ void motionCommandFilter::determineMotionState(){
     start_beacon_drop_turn_ = false;
     have_initial_settle_time_ = false;
     have_target_heading_ = false;
+    dropped_beacon_ = false;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
     pub_cmd_vel_.publish(control_command_msg_);
@@ -521,11 +522,20 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
     }
     float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
     if(dur >= beacon_drop_motion_settle_dur_){
-      pub_beacon_deploy_.publish(deploy_beacon_);
-      pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
-      beacon_drop_complete_ = true;
+      if(!dropped_beacon_){
+        beacon_drop_time_ = ros::Time::now();
+        pub_beacon_deploy_.publish(deploy_beacon_);
+        pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
+        dropped_beacon_ = true;
+      } else {
+        float drop_dur =  (ros::Time::now() - beacon_drop_time_).toSec();
+        if(drop_dur > 2.0){
+          beacon_drop_complete_ = true;
+        }
+      }
     }
   }
+
 }
 
 void motionCommandFilter::publishCommands(){

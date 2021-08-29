@@ -213,7 +213,8 @@ class motionCommandFilter {
     bool backup_close_on_right_;
     double close_beacon_turn_angle_;
     bool have_target_heading_;
-
+    bool dropped_beacon_;
+    ros::Time beacon_drop_time_;
 
 }; // class SimpleNodeClass
 
