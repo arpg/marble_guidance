@@ -276,7 +276,8 @@ void motionCommandFilter::determineMotionState(){
       // off of the current trajectory
 
       if(beacon_drop_complete_){
-        state_ = motionCommandFilter::IDLE;
+        state_ = motionCommandFilter::BEACON_MOTION;
+        started_beacon_clear_motion_ = false;
       }
 
       // if(!beacon_drop_cmd_){
@@ -295,6 +296,7 @@ void motionCommandFilter::determineMotionState(){
       }
 
       if((ros::Time::now() - beacon_clear_start_time_).toSec() > beacon_clear_motion_duration_){
+        // End of beacon drop dance, go back to Idle.
         state_ = motionCommandFilter::IDLE;
       }
       break;
@@ -310,7 +312,7 @@ void motionCommandFilter::determineMotionState(){
     pub_cmd_vel_.publish(control_command_msg_);
   }
 
-  if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP)){
+  if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
     state_ = motionCommandFilter::BEACON_DROP;
     beacon_drop_start_time_ = ros::Time::now();
     beacon_drop_complete_ = false;
@@ -481,6 +483,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
   // close to a wall on, and do a 30 degree turn prior to dropping.
   control_command_msg_.linear.x = 0.0;
   control_command_msg_.angular.z = 0.0;
+  
   if(enable_backup_){
     // We are alreay close to a wall, just drop the beacon
     // Give the vehicle a few seconds to settle to a stop.
