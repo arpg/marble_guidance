@@ -308,7 +308,7 @@ void motionCommandFilter::determineMotionState(){
 
   // No matter what state we are in, switch to s_estop
   // if we receive an estop command.
-  if(estop_cmd_ && !(state_ == motionCommandFilter::ESTOP)){
+  if(estop_cmd_ && !(state_ == motionCommandFilter::ESTOP || state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
     state_ = motionCommandFilter::ESTOP;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
@@ -489,48 +489,66 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
   control_command_msg_.linear.x = 0.0;
   control_command_msg_.angular.z = 0.0;
 
-  if(!have_target_heading_){
-
-    if(enable_backup_){
-      // We are already close to a wall, just drop the beacon
-      // Give the vehicle a few seconds to settle to a stop.
-      if(backup_close_on_left_){
-        // We are close to an obstacle on the left, only turn 30 degrees cw
-        goal_heading_ = wrapAngle(current_heading_ - close_beacon_turn_angle_);
-      } else if(backup_close_on_right_){
-        // We are close to an obstacle on the right, only turn 30 degrees ccw
-        goal_heading_ = wrapAngle(current_heading_ + close_beacon_turn_angle_);
+  if(estop_cmd_){
+    // We received an estop command, don't do anything until it's cleared
+    beacon_estop_ = true;
+  } else {
+    // Need to reset timers accordingly
+    if(beacon_estop_){
+      if(have_initial_settle_time_){
+        beacon_drop_start_time_ = ros::Time::now();
+        if(dropped_beacon_){
+          beacon_drop_time_ = ros::Time::now();
+        }
       }
-
-    } else {
-      // We have enough room to do a 90 degree turn
-      goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
+    beacon_estop_ = false;
     }
-
-    have_target_heading_ = true;
   }
 
-  float heading_error = wrapAngle(goal_heading_ - current_heading_);
-  if(abs(heading_error) >= .1){
-    control_command_msg_.linear.x = 0.0;
-    control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
-  } else {
-    // We have finished turning, wait for the vehicle to settle
-    if(!have_initial_settle_time_){
-      beacon_drop_start_time_ = ros::Time::now();
-      have_initial_settle_time_ = true;
-    }
-    float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
-    if(dur >= beacon_drop_motion_settle_dur_){
-      if(!dropped_beacon_){
-        beacon_drop_time_ = ros::Time::now();
-        pub_beacon_deploy_.publish(deploy_beacon_);
-        pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
-        dropped_beacon_ = true;
+  if(!beacon_estop_){
+    if(!have_target_heading_){
+
+      if(enable_backup_){
+        // We are already close to a wall, just drop the beacon
+        // Give the vehicle a few seconds to settle to a stop.
+        if(backup_close_on_left_){
+          // We are close to an obstacle on the left, only turn 30 degrees cw
+          goal_heading_ = wrapAngle(current_heading_ - close_beacon_turn_angle_);
+        } else if(backup_close_on_right_){
+          // We are close to an obstacle on the right, only turn 30 degrees ccw
+          goal_heading_ = wrapAngle(current_heading_ + close_beacon_turn_angle_);
+        }
+
       } else {
-        float drop_dur =  (ros::Time::now() - beacon_drop_time_).toSec();
-        if(drop_dur > 2.0){
-          beacon_drop_complete_ = true;
+        // We have enough room to do a 90 degree turn
+        goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
+      }
+
+      have_target_heading_ = true;
+    }
+
+    float heading_error = wrapAngle(goal_heading_ - current_heading_);
+    if(abs(heading_error) >= .1){
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
+    } else {
+      // We have finished turning, wait for the vehicle to settle
+      if(!have_initial_settle_time_){
+        beacon_drop_start_time_ = ros::Time::now();
+        have_initial_settle_time_ = true;
+      }
+      float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
+      if(dur >= beacon_drop_motion_settle_dur_){
+        if(!dropped_beacon_){
+          beacon_drop_time_ = ros::Time::now();
+          pub_beacon_deploy_.publish(deploy_beacon_);
+          pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
+          dropped_beacon_ = true;
+        } else {
+          float drop_dur =  (ros::Time::now() - beacon_drop_time_).toSec();
+          if(drop_dur > 2.0){
+            beacon_drop_complete_ = true;
+          }
         }
       }
     }
