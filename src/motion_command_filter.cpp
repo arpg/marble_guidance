@@ -69,6 +69,7 @@ void motionCommandFilter::init() {
 
     backup_turn_thresh_ = 1.5707;
     deploy_beacon_.data = true;
+    beacon_estop_ = false;
 
 }
 
