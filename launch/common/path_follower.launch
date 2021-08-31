@@ -28,7 +28,7 @@
     <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
     <param name="turn_in_place_thresh"            value="1.5"/>
     <param name="end_turn_in_place_thresh"        value="0.1"/>
-    <param name="turn_in_place_yawrate"           value="0.5"/>
+    <param name="turn_in_place_yawrate"           value="0.4"/>
     <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
     <param name="enable_speed_regulation"         value="true"/>
     <param name="stopping_distance"               value="0.4"/>
