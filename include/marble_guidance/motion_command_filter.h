@@ -215,6 +215,7 @@ class motionCommandFilter {
     bool have_target_heading_;
     bool dropped_beacon_;
     ros::Time beacon_drop_time_;
+    bool beacon_estop_;
 
 }; // class SimpleNodeClass
 
