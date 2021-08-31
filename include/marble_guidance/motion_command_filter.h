@@ -13,6 +13,7 @@
 #include <boost/circular_buffer.hpp>
 
 #include <std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
@@ -23,6 +24,7 @@
 #include <marble_guidance/TrajList.h>
 #include <marble_guidance/MotionCmd.h>
 #include <marble_guidance/HuskySafety.h>
+#include <marble_guidance/BackupStatus.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -32,10 +34,6 @@
 // #include <lcd_pkg/PoseGraph.h>
 #include <tf/tf.h>
 #include <math.h>
-
-#include <std_srvs/Trigger.h>
-#include <std_srvs/SetBool.h>
-
 
 using namespace std;
 namespace motion_command_filter{
@@ -53,20 +51,18 @@ class motionCommandFilter {
     void pathMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
-    void backupCmdCb(const std_msgs::BoolConstPtr& msg);
+    void backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
     void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
-    void stairModeCb(const std_msgs::BoolConstPtr& msg);
     void filterCommands();
     void lowpassFilterCommands(const geometry_msgs::Twist new_command);
     void publishCommands();
     void checkConnections();
     void determineMotionState();
+    void computeBeaconDropMotionCmds();
     geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
-    bool isUpstairs(const geometry_msgs::Point lookahead_point);
-    bool checkStairProgress();
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
@@ -84,8 +80,6 @@ class motionCommandFilter {
       BEACON_MOTION = 9,
       ERROR = 10,
       IDLE = 11,
-      STAIR_MODE_UP,
-      STAIR_MODE_DOWN,
     };
 
  private:
@@ -94,10 +88,6 @@ class motionCommandFilter {
     // private ros node handle
     ros::NodeHandle pnh_;
     ros::NodeHandle priv_nh;
-
-    bool sendTriggerRequest(std::string type);
-    std::map< std::string, ros::ServiceClient > _clients;
-
     std::string node_name_{"node_name"};
 
     // SUBSCRIBERS //
@@ -110,16 +100,12 @@ class motionCommandFilter {
     ros::Subscriber sub_husky_safety_;
     ros::Subscriber sub_sf_command_;
     ros::Subscriber sub_beacon_cmd_;
-    ros::Subscriber sub_stair_mode_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_cmd_vel_stamped_;
-
-    ros::ServiceClient stair_mode_client_;
-
-    ros::ServiceClient stair_mode_on_;
-    ros::ServiceClient stair_mode_off_;
+    ros::Publisher pub_beacon_deploy_;
+    ros::Publisher pub_beacon_deploy_virtual_;
 
     string vehicle_name_;
     int loop_rate_;
@@ -133,7 +119,7 @@ class motionCommandFilter {
     geometry_msgs::Point current_pos_;
     double current_roll_;
     double current_pitch_;
-    double current_yaw_;
+    double current_heading_;
 
     // pathMotionCmdCb
     bool have_path_motion_cmd_;
@@ -215,27 +201,21 @@ class motionCommandFilter {
     float min_lidar_dist_;
     double backup_turn_thresh_;
 
-    bool is_spot_;
-    bool stair_mode_cmd_;
-    double planning_link_z_offset_;
-    double stair_mode_pitch_thresh_;
-
-    bool is_up_stairs_;
-    std::map< std::string, ros::ServiceClient > clients_;
-
-    double stair_align_thresh_;
-    double stair_turnaround_thresh_;
-    bool do_stair_align_;
-    bool do_stair_turnaround_;
-    bool started_stairs_;
-    geometry_msgs::Point path_goal_point_;
-    geometry_msgs::Point last_path_goal_point_;
-    bool have_new_path_;
-
-
-    std_srvs::SetBool stair_mode_srv_;
-
-
+    bool beacon_drop_complete_;
+    std_msgs::Bool deploy_beacon_;
+    std_msgs::Empty deploy_beacon_virtual_;
+    ros::Time beacon_drop_start_time_;
+    bool have_initial_settle_time_;
+    double beacon_drop_motion_settle_dur_;
+    bool start_beacon_drop_turn_;
+    float goal_heading_;
+    bool backup_close_on_left_;
+    bool backup_close_on_right_;
+    double close_beacon_turn_angle_;
+    bool have_target_heading_;
+    bool dropped_beacon_;
+    ros::Time beacon_drop_time_;
+    bool beacon_estop_;
 
 }; // class SimpleNodeClass
 

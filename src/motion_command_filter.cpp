@@ -251,7 +251,7 @@ void motionCommandFilter::determineMotionState(){
 
       // If we get a path command to turn around, but enable backup is true
       // switch to backup path following
-      if((path_motion_type_ == a_turnaround_) && enable_backup_ && !(stair_mode_cmd_ && is_spot_)){
+      if((path_motion_type_ == a_turnaround_) && enable_backup_ && !is_spot_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
         float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
         //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
@@ -285,10 +285,9 @@ void motionCommandFilter::determineMotionState(){
           //sendTriggerRequest("stair_mode_on");
 
           stair_mode_srv_.request.data = true;
-          //stair_mode_client_.call(stair_mode_srv_);
-          sendTriggerRequest("stair_mode_on");
-          if(true){
-          //if(stair_mode_client_.call(stair_mode_srv_)){
+          //sendTriggerRequest("stair_mode_on");
+          //if(true){
+          if(stair_mode_client_.call(stair_mode_srv_)){
             state_ = motionCommandFilter::STAIR_MODE_UP;
             started_stairs_ = false;
             ROS_INFO("Motion filter: Spot stair mode engaged.");
@@ -401,21 +400,20 @@ void motionCommandFilter::determineMotionState(){
         // ROS_INFO_THROTTLE(1.0,"CHECKING PROGRESS...");
         if(checkStairProgress()){
           ROS_INFO("TOP OF STAIRS REACHED, EXITING STAIR MODE UP");
-          state_ = motionCommandFilter::IDLE;
           have_new_path_ = false;
           stair_mode_srv_.request.data = false;
-          //stair_mode_client_.call(stair_mode_srv_);
-          sendTriggerRequest("stair_mode_off");
-          if(true){
-          //if(true || stair_mode_client_.call(stair_mode_srv_)){
+          //sendTriggerRequest("stair_mode_off");
+          //if(true){
+          if(stair_mode_client_.call(stair_mode_srv_)){
             ROS_INFO("Motion filter: Spot stair mode disengaged.");
+            state_ = motionCommandFilter::IDLE;
           } else {
             ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
           }
         }
 
         // If the path changes to going down the stairs, just follow it back down
-        if(!isUpstairs(path_goal_point_) && false){
+        if(!isUpstairs(path_goal_point_)){
           state_ = motionCommandFilter::STAIR_MODE_DOWN;
         }
       }
@@ -434,20 +432,21 @@ void motionCommandFilter::determineMotionState(){
       } else {
 
         if(checkStairProgress()){
-          state_ = motionCommandFilter::IDLE;
           stair_mode_srv_.request.data = false;
-	  sendTriggerRequest("stair_mode_off");
-          if(true || stair_mode_client_.call(stair_mode_srv_)){
+          //sendTriggerRequest("stair_mode_off");
+          //if(true || stair_mode_client_.call(stair_mode_srv_)){
+          if(stair_mode_client_.call(stair_mode_srv_)){
             ROS_INFO("Motion filter: Spot stair mode disengaged.");
+            state_ = motionCommandFilter::IDLE;
           } else {
             ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
-          }             
-	}
+          }
+        }
 
         // If the path changes to going up the stairs, just follow it up
-        if(isUpstairs(path_goal_point_)){
-          state_ = motionCommandFilter::STAIR_MODE_UP;
-        }
+        // if(isUpstairs(path_goal_point_)){
+        //   state_ = motionCommandFilter::STAIR_MODE_UP;
+        // }
       }
       break;
 
@@ -462,7 +461,7 @@ void motionCommandFilter::determineMotionState(){
     pub_cmd_vel_.publish(control_command_msg_);
   }
 
-  if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP)){
+  if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP) && !is_spot_){
     state_ = motionCommandFilter::BEACON_DROP;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
@@ -566,9 +565,11 @@ void motionCommandFilter::filterCommands(){
 
     case motionCommandFilter::STAIR_MODE_UP:
       if(do_stair_align_){
-        ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode up");
-        control_command_msg_.linear.x = 0.1;
-        control_command_msg_.angular.z = 0.0;
+        ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode up, aligning");
+        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+        float heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+        control_command_msg_.linear.x = 0.0;
+        control_command_msg_.angular.z = sat(yawrate_k0_*heading_angle_error, -0.2, 0.2);
       } else {
         ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode up");
         control_command_msg_.linear.x = 0.5;
@@ -579,8 +580,10 @@ void motionCommandFilter::filterCommands(){
       case motionCommandFilter::STAIR_MODE_DOWN:
         if(do_stair_turnaround_){
           ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode turnaround");
+          float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+          float heading_error = abs(wrapAngle(relative_lookahead_heading - (current_yaw_+M_PI/2.0)));
           control_command_msg_.linear.x = 0.0;
-          control_command_msg_.angular.z = 0.1;
+          control_command_msg_.angular.z = sat(yawrate_k0_*heading_angle_error, -0.2, 0.2);
         } else {
           ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode down");
           control_command_msg_.linear.x = -0.5;
