@@ -23,6 +23,8 @@ void motionCommandFilter::init() {
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    pub_beacon_deploy_ = nh_.advertise<std_msgs::Bool>("deploy",1);
+    pub_beacon_deploy_virtual_ = nh_.advertise<std_msgs::Empty>("deploy_virtual",1);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
@@ -46,6 +48,8 @@ void motionCommandFilter::init() {
     pnh_.param("close_side_speed", close_side_speed_, .1);
 
     pnh_.param("beacon_clear_motion_duration", beacon_clear_motion_duration_, 1.0);
+    pnh_.param("beacon_drop_motion_settle_duration", beacon_drop_motion_settle_dur_, 2.0);
+    pnh_.param("close_beacon_turn_angle", close_beacon_turn_angle_, 0.5);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
@@ -64,6 +68,8 @@ void motionCommandFilter::init() {
     enable_yaw_rate_filtering_ = true;
 
     backup_turn_thresh_ = 1.5707;
+    deploy_beacon_.data = true;
+    beacon_estop_ = false;
 
 }
 
@@ -76,7 +82,7 @@ void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
   geometry_msgs::Quaternion vehicle_quat_msg = current_odom_.pose.pose.orientation;
   tf::Quaternion vehicle_quat_tf;
   tf::quaternionMsgToTF(vehicle_quat_msg, vehicle_quat_tf);
-  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_yaw_);
+  tf::Matrix3x3(vehicle_quat_tf).getRPY(current_roll_, current_pitch_, current_heading_);
 
 }
 
@@ -101,8 +107,10 @@ void motionCommandFilter::followTrajCb(const std_msgs::BoolConstPtr& msg){
   enable_trajectory_following_ = msg->data;
 }
 
-void motionCommandFilter::backupCmdCb(const std_msgs::BoolConstPtr& msg){
-  enable_backup_ = msg->data;
+void motionCommandFilter::backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg){
+  enable_backup_ = msg->enable_backup;
+  backup_close_on_left_ = msg->close_on_left;
+  backup_close_on_right_ = msg->close_on_right;
 }
 
 void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
@@ -191,7 +199,7 @@ void motionCommandFilter::determineMotionState(){
       // switch to backup path following
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
-        float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+        float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
         //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
         //ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
         //ROS_INFO("")
@@ -234,7 +242,7 @@ void motionCommandFilter::determineMotionState(){
         state_ = motionCommandFilter::PATH_TURN_AROUND;
       }
       float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
-      float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_yaw_ ));
+      float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
       if(abs(relative_heading_error) < M_PI/2.0){
         // The path has switched and is now in front of us
         // No need to backup any further or turn around in palce
@@ -268,11 +276,18 @@ void motionCommandFilter::determineMotionState(){
       break;
 
     case motionCommandFilter::BEACON_DROP:
-      // If we are in the beacon drop state, wait for the beacon to drop
-      if(!beacon_drop_cmd_){
+      // If we are in the beacon drop state, check if we can place the beacon
+      // off of the current trajectory
+
+      if(beacon_drop_complete_){
         state_ = motionCommandFilter::BEACON_MOTION;
         started_beacon_clear_motion_ = false;
       }
+
+      // if(!beacon_drop_cmd_){
+      //   state_ = motionCommandFilter::BEACON_MOTION;
+      //   started_beacon_clear_motion_ = false;
+      // }
       break;
 
     case motionCommandFilter::BEACON_MOTION:
@@ -285,6 +300,7 @@ void motionCommandFilter::determineMotionState(){
       }
 
       if((ros::Time::now() - beacon_clear_start_time_).toSec() > beacon_clear_motion_duration_){
+        // End of beacon drop dance, go back to Idle.
         state_ = motionCommandFilter::IDLE;
       }
       break;
@@ -293,20 +309,26 @@ void motionCommandFilter::determineMotionState(){
 
   // No matter what state we are in, switch to s_estop
   // if we receive an estop command.
-  if(estop_cmd_ && !(state_ == motionCommandFilter::ESTOP)){
+  if(estop_cmd_ && !(state_ == motionCommandFilter::ESTOP || state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
     state_ = motionCommandFilter::ESTOP;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
     pub_cmd_vel_.publish(control_command_msg_);
   }
 
-  if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP)){
+  if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
     state_ = motionCommandFilter::BEACON_DROP;
+    beacon_drop_start_time_ = ros::Time::now();
+    beacon_drop_complete_ = false;
+    beacon_drop_cmd_ = false;
+    start_beacon_drop_turn_ = false;
+    have_initial_settle_time_ = false;
+    have_target_heading_ = false;
+    dropped_beacon_ = false;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
     pub_cmd_vel_.publish(control_command_msg_);
   }
-
 
 }
 
@@ -403,8 +425,7 @@ void motionCommandFilter::filterCommands(){
 
     case motionCommandFilter::BEACON_DROP:
       ROS_INFO_THROTTLE(5.0, "Motion filter: beacon drop");
-      control_command_msg_.linear.x = 0.0;
-      control_command_msg_.angular.z = 0.0;
+      computeBeaconDropMotionCmds();
       break;
 
     case motionCommandFilter::BEACON_MOTION:
@@ -434,7 +455,7 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
 
   // Create a yaw rate command from the heading error to the lookahead point
   float relative_lookahead_heading = atan2((lookahead.y - current_pos_.y), (lookahead.x - current_pos_.x));
-  float lookahead_angle_error = wrapAngle(relative_lookahead_heading - (current_yaw_ + M_PI));
+  float lookahead_angle_error = wrapAngle(relative_lookahead_heading - (current_heading_ + M_PI));
   float distance = dist(current_pos_, lookahead);
   //ROS_INFO_THROTTLE(1, "Rel. Heading: %f, Cur. Heading: %f, Angle Err: %f, Dist: %f", relative_lookahead_heading, current_heading_, lookahead_angle_error, dist);
 
@@ -457,6 +478,82 @@ geometry_msgs::Twist motionCommandFilter::computeBackupCmd(const geometry_msgs::
   backup_cmd.angular.z = yawrate_cmd;
 
   return backup_cmd;
+
+}
+
+void motionCommandFilter::computeBeaconDropMotionCmds(){
+  // First, check to see how much space we have around us.
+  // For now, just use the backup detector
+
+  // A better option would be to figure out which side we are
+  // close to a wall on, and do a 30 degree turn prior to dropping.
+  control_command_msg_.linear.x = 0.0;
+  control_command_msg_.angular.z = 0.0;
+
+  if(estop_cmd_){
+    // We received an estop command, don't do anything until it's cleared
+    beacon_estop_ = true;
+  } else {
+    // Need to reset timers accordingly
+    if(beacon_estop_){
+      if(have_initial_settle_time_){
+        beacon_drop_start_time_ = ros::Time::now();
+        if(dropped_beacon_){
+          beacon_drop_time_ = ros::Time::now();
+        }
+      }
+    beacon_estop_ = false;
+    }
+  }
+
+  if(!beacon_estop_){
+    if(!have_target_heading_){
+
+      if(enable_backup_){
+        // We are already close to a wall, just drop the beacon
+        // Give the vehicle a few seconds to settle to a stop.
+        if(backup_close_on_left_){
+          // We are close to an obstacle on the left, only turn 30 degrees cw
+          goal_heading_ = wrapAngle(current_heading_ - close_beacon_turn_angle_);
+        } else if(backup_close_on_right_){
+          // We are close to an obstacle on the right, only turn 30 degrees ccw
+          goal_heading_ = wrapAngle(current_heading_ + close_beacon_turn_angle_);
+        }
+
+      } else {
+        // We have enough room to do a 90 degree turn
+        goal_heading_ = wrapAngle(current_heading_ + M_PI/2.0);
+      }
+
+      have_target_heading_ = true;
+    }
+
+    float heading_error = wrapAngle(goal_heading_ - current_heading_);
+    if(abs(heading_error) >= .1){
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
+    } else {
+      // We have finished turning, wait for the vehicle to settle
+      if(!have_initial_settle_time_){
+        beacon_drop_start_time_ = ros::Time::now();
+        have_initial_settle_time_ = true;
+      }
+      float dur = (ros::Time::now() - beacon_drop_start_time_).toSec();
+      if(dur >= beacon_drop_motion_settle_dur_){
+        if(!dropped_beacon_){
+          beacon_drop_time_ = ros::Time::now();
+          pub_beacon_deploy_.publish(deploy_beacon_);
+          pub_beacon_deploy_virtual_.publish(deploy_beacon_virtual_);
+          dropped_beacon_ = true;
+        } else {
+          float drop_dur =  (ros::Time::now() - beacon_drop_time_).toSec();
+          if(drop_dur > 2.0){
+            beacon_drop_complete_ = true;
+          }
+        }
+      }
+    }
+  }
 
 }
 

@@ -36,6 +36,8 @@
 // #include <octomap_msgs/conversions.h>
 #include <rough_octomap/conversions.h>
 
+#include <marble_guidance/BackupStatus.h>
+
 using namespace std;
 
 namespace backup_detector{
@@ -88,7 +90,8 @@ class backupDetector{
     std::string map_frame_;
     std::string base_link_frame_;
 
-    std_msgs::Bool backup_msg_;
+    // std_msgs::Bool backup_msg_;
+    marble_guidance::BackupStatus backup_status_msg_;
 
     double safety_radius_;
     double safety_z_min_;
@@ -104,6 +107,8 @@ class backupDetector{
     vector <geometry_msgs::PointStamped> transformed_query_point_vec_;
 
     bool close_obstacle_flag_;
+    bool close_on_left_flag_;
+    bool close_on_right_flag_;
 
     // imuCb
     double roll_;
