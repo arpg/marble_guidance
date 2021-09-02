@@ -169,6 +169,9 @@ void backupDetector::processOctomap(){
   close_on_left_flag_ = false;
   close_on_right_flag_ = false;
 
+  left_close_points_vec_.clear();
+  right_close_points_vec_.clear();
+
   for(int i = 0; i < num_query_points_; i++){
     octomap::RoughOcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
     if(current_node && current_node->getLogOdds() >= 0.0){
@@ -177,16 +180,52 @@ void backupDetector::processOctomap(){
       // Check if the occupied cell is within our safety cylinder
       voxel_radius = sqrt(pow(query_point_vec_[i].x, 2) + pow(query_point_vec_[i].y, 2));
       if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_ && query_point_vec_[i].z < safety_z_max_){
+        //ROS_INFO("voxel radius: %f", voxel_radius);
         close_obstacle_flag_ = true;
         close_cell_indices_vec_.push_back(i);
-        if(query_point_vec_[i].y < 0.0){
+        if(query_point_vec_[i].y > 0.0){
           close_on_left_flag_ = true;
+          left_close_points_vec_.push_back(query_point_vec_[i]);
         } else {
           close_on_right_flag_ = true;
+          right_close_points_vec_.push_back(query_point_vec_[i]);
         }
       }
     }
   }
+
+  // Check to see which side has the closest occupied point
+  int l_vec_size = left_close_points_vec_.size();
+  int r_vec_size = right_close_points_vec_.size();
+
+  float l_min_dist = 1000.0;
+  float r_min_dist = 1000.0;
+
+  float l_dist = 0;
+  float r_dist = 0;
+  if(close_on_left_flag_ && close_on_right_flag_){
+    // Need to determine which side we are closer to for dropping
+    for(int i = 0; i < l_vec_size; i++){
+      l_dist = sqrt(pow(left_close_points_vec_[i].x, 2.0) + pow(left_close_points_vec_[i].y, 2.0));
+      if (l_dist < l_min_dist){
+        l_min_dist = l_dist;
+      }
+    }
+
+    for(int i = 0; i < r_vec_size; i++){
+      r_dist = sqrt(pow(right_close_points_vec_[i].x, 2.0) + pow(right_close_points_vec_[i].y, 2.0));
+      if (r_dist < r_min_dist){
+        r_min_dist = r_dist;
+      }
+    }
+
+    if(r_min_dist < l_min_dist){
+      close_on_left_flag_ = false;
+    } else {
+      close_on_right_flag_ = false;
+    }
+  }
+
 
   if (enable_debug_){
     pcl::PointCloud<pcl::PointXYZ> point_pcl;
@@ -235,7 +274,8 @@ void backupDetector::processIMU(){
 
 void backupDetector::publishBackupMsg(){
   // backup_msg_.data = (close_obstacle_flag_ || bad_attitude_flag_);
-  backup_status_msg_.enable_backup = (close_obstacle_flag_ || bad_attitude_flag_);
+  // backup_status_msg_.enable_backup = (close_obstacle_flag_ || bad_attitude_flag_);
+  backup_status_msg_.enable_backup = close_obstacle_flag_;
   backup_status_msg_.close_on_left = close_on_left_flag_;
   backup_status_msg_.close_on_right = close_on_right_flag_;
   pub_backup_.publish(backup_status_msg_);

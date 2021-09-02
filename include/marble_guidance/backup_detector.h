@@ -124,6 +124,8 @@ class backupDetector{
     vector<int> close_cell_indices_vec_;
 
     double resolution_;
+    vector <geometry_msgs::Point> left_close_points_vec_;
+    vector <geometry_msgs::Point> right_close_points_vec_;
 
 };
 

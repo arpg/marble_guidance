@@ -310,7 +310,7 @@ void motionCommandFilter::determineMotionState(){
   // No matter what state we are in, switch to s_estop
   // if we receive an estop command.
   if(estop_cmd_ && !(state_ == motionCommandFilter::ESTOP || state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
-    ROS_INFO("Setting estop state");
+    // ROS_INFO("Setting estop state");
     state_ = motionCommandFilter::ESTOP;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
