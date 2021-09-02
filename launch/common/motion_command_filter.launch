@@ -7,7 +7,7 @@
   <arg name="max_forward_speed"         default="1.0" />
   <arg name="yaw_error_k"         default="1.0" />
 
-  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance">
+  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
     <remap from="motion_command_filter/odometry"      to="odometry"/>
     <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
@@ -15,7 +15,7 @@
     <remap from="motion_command_filter/cmd_vel"           to="$(arg cmd_vel_topic)"/>
     <remap from="motion_command_filter/estop_cmd"         to="estop"/>
     <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
-    <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>
+    <remap from="motion_command_filter/backup_status_msg" to="backup_detector/backup_status_msg"/>
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
     <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
     <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy_beacon"/>

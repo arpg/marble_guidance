@@ -15,7 +15,7 @@ void motionCommandFilter::init() {
     sub_path_motion_cmd_ = nh_.subscribe("path_motion_cmd", 1, &motionCommandFilter::pathMotionCmdCb, this);
     sub_traj_motion_cmd_ = nh_.subscribe("traj_motion_cmd", 1, &motionCommandFilter::trajMotionCmdCb, this);
     sub_follow_traj_ = nh_.subscribe("follow_traj", 1, &motionCommandFilter::followTrajCb, this);
-    sub_backup_cmd_ = nh_.subscribe("enable_backup", 1, &motionCommandFilter::backupCmdCb, this);
+    sub_backup_cmd_ = nh_.subscribe("backup_status_msg", 1, &motionCommandFilter::backupCmdCb, this);
     sub_estop_cmd_ = nh_.subscribe("estop_cmd", 1, &motionCommandFilter::estopCmdCb, this);
     sub_husky_safety_ = nh_.subscribe("husky_safety", 1, &motionCommandFilter::huskySafetyCb, this);
     sub_sf_command_ = nh_.subscribe("sf_nearness_cmd", 1, &motionCommandFilter::sfNearnessCmdCb, this);
@@ -141,7 +141,7 @@ void motionCommandFilter::checkConnections(){
     if((ros::Time::now() - last_traj_time_).toSec() > connection_failure_thresh_){
       have_odom_ = false;
       if(state_ != s_startup_){
-        ROS_INFO_THROTTLE(1.0,"Error: Lost odometry...");
+        ROS_INFO_THROTTLE(2.0,"Error: Lost odometry...");
       }
     }
 
@@ -149,7 +149,7 @@ void motionCommandFilter::checkConnections(){
   if((ros::Time::now() - last_path_time_).toSec() > connection_failure_thresh_){
     have_path_motion_cmd_ = false;
     if(state_ != s_startup_){
-      ROS_INFO_THROTTLE(1.0,"Error: Lost path commands...");
+      ROS_INFO_THROTTLE(2.0,"Error: Lost path commands...");
     }
   }
 
@@ -157,7 +157,7 @@ void motionCommandFilter::checkConnections(){
   if((ros::Time::now() - last_traj_time_).toSec() > connection_failure_thresh_){
     have_traj_motion_cmd_ = false;
     if(state_ != s_startup_){
-      ROS_INFO_THROTTLE(1.0,"Error: Lost trajectory commands...");
+      ROS_INFO_THROTTLE(2.0,"Error: Lost trajectory commands...");
     }
   }
 
@@ -165,7 +165,7 @@ void motionCommandFilter::checkConnections(){
   if((ros::Time::now() - last_sf_cmd_time_).toSec() > connection_failure_thresh_){
     have_sf_r_cmd_ = false;
     if(enable_sf_assist_){
-      ROS_INFO_THROTTLE(1.0,"Error: Lost SF assist command...");
+      ROS_INFO_THROTTLE(2.0,"Error: Lost SF assist command...");
     }
   }
 
@@ -310,6 +310,7 @@ void motionCommandFilter::determineMotionState(){
   // No matter what state we are in, switch to s_estop
   // if we receive an estop command.
   if(estop_cmd_ && !(state_ == motionCommandFilter::ESTOP || state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
+    ROS_INFO("Setting estop state");
     state_ = motionCommandFilter::ESTOP;
     control_command_msg_.linear.x = 0.0;
     control_command_msg_.angular.z = 0.0;
@@ -344,34 +345,34 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::IDLE:
-      ROS_INFO_THROTTLE(0.5,"Motion filter: idle");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: idle");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;
 
     case motionCommandFilter::ESTOP:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: estop");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: estop");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;
 
     case motionCommandFilter::PATH_FOLLOW:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: path follow");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: path follow");
       control_command_msg_ = path_cmd_vel_;
       if(enable_husky_safety_){
 
-        if(min_lidar_dist_ < 1.0 && path_cmd_vel_.linear.x != 0.0){
-          ROS_INFO_THROTTLE(5.0,"Getting close to obstacle");
+        if(min_lidar_dist_ < 2.0 && path_cmd_vel_.linear.x != 0.0){
+          ROS_INFO_THROTTLE(2.0,"Getting close to obstacle");
           control_command_msg_.linear.x = sat(path_cmd_vel_.linear.x*pow(min_lidar_dist_,2), 0.1, u_fwd_cmd_max_);
         }
         // Regulate vehicle forward speed based on safety limits
         if(too_close_side_&& path_cmd_vel_.linear.x != 0.0){
-          ROS_INFO_THROTTLE(5.0,"Too close on the side!");
+          ROS_INFO_THROTTLE(2.0,"Too close on the side!");
           control_command_msg_.linear.x = close_side_speed_;
         }
         // Need to stop if we detect something in the front of the vehicle
         if(too_close_front_){
-          ROS_INFO_THROTTLE(5.0,"Too close in front!");
+          ROS_INFO_THROTTLE(2.0,"Too close in front!");
           control_command_msg_.linear.x = 0.0;
         }
 
@@ -384,7 +385,7 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::TRAJ_FOLLOW:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: trajectory follow");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: trajectory follow");
       control_command_msg_ = traj_cmd_vel_;
       if(enable_husky_safety_){
         // Regulate vehicle forward speed based on safety limits
@@ -404,43 +405,43 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::PATH_BACKUP:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: path backup");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: path backup");
       control_command_msg_ = computeBackupCmd(path_lookahead_);
       break;
 
     case motionCommandFilter::TRAJ_BACKUP:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: trajectory backup");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: trajectory backup");
       control_command_msg_ = computeBackupCmd(traj_lookahead_);
       break;
 
     case motionCommandFilter::PATH_TURN_AROUND:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: path turning around");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: path turning around");
       control_command_msg_ = path_cmd_vel_;
       break;
 
     case motionCommandFilter::TRAJ_TURN_AROUND:
-      ROS_INFO_THROTTLE(5.0,"Motion filter: traj turning around");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: traj turning around");
       control_command_msg_ = traj_cmd_vel_;
       break;
 
     case motionCommandFilter::BEACON_DROP:
-      ROS_INFO_THROTTLE(5.0, "Motion filter: beacon drop");
+      ROS_INFO_THROTTLE(2.0, "Motion filter: beacon drop");
       computeBeaconDropMotionCmds();
       break;
 
     case motionCommandFilter::BEACON_MOTION:
-      ROS_INFO_THROTTLE(5.0, "Motion filter: clearing dropped beacon");
+      ROS_INFO_THROTTLE(2.0, "Motion filter: clearing dropped beacon");
       control_command_msg_.linear.x = 0.2;
       control_command_msg_.angular.z = 0.0;
       // Need to stop if we detect something in the front of the vehicle
       if(too_close_front_){
-        ROS_INFO_THROTTLE(5.0,"Too close in front!");
+        ROS_INFO_THROTTLE(2.0,"Too close in front!");
         control_command_msg_.linear.x = 0.0;
       }
       break;
 
     case motionCommandFilter::ERROR:
-      ROS_INFO_THROTTLE(1.0,"Motion filter: error");
+      ROS_INFO_THROTTLE(2.0,"Motion filter: error");
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = 0.0;
       break;

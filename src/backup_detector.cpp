@@ -40,7 +40,6 @@ void backupDetector::init() {
   backup_status_msg_.enable_backup = false;
   backup_status_msg_.close_on_left = false;
   backup_status_msg_.close_on_right = false;
-  backup_status_msg_.enable_backup = false;
   enable_debug_ = true;
   close_obstacle_flag_ = false;
   bad_attitude_flag_ = false;
