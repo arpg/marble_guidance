@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="vehicle_name"            default="D01"/>
+  <arg name="vehicle_name"            default="D02"/>
   <arg name="enable_ground_truth"     default="false"/>
 
   <arg name="max_yawrate"             default="0.5"/>
@@ -12,7 +12,7 @@
 
   <arg name="path_topic"               default="planned_path"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
-  <arg name="cmd_vel_topic"            default="spot/cmd_vel_nav2"/>
+  <arg name="cmd_vel_topic"            default="nav_vel2"/>
 
   <arg name="map_res"        default=".15"/>
 
@@ -55,6 +55,6 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
     <arg name="cmd_vel_topic"    value="$(arg cmd_vel_topic)"/>
     <arg name="is_spot"          value="true"/>
-  </include>
+</include>
 
 </launch>
