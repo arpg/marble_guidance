@@ -25,6 +25,8 @@
     <remap from="motion_command_filter/deploy"            to="deploy"/>
     <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
 
+    <remap from="motion_command_filter/stair_mode_cmd"    to="is_near_stair"/>
+
     <param name="is_spot"                         value="$(arg is_spot)"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
@@ -57,6 +59,7 @@
     <param name="stair_mode_pitch_thresh"         value=".1"/>
     <param name="stair_align_thresh"              value=".8"/>
     <param name="stair_turnaround_thresh"         value=".15"/>
+    <param name="stair_mode_fwd_speed"            value=".5"/>
 
   </node>
 

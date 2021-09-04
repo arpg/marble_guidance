@@ -98,9 +98,6 @@ class motionCommandFilter {
     ros::NodeHandle pnh_;
     ros::NodeHandle priv_nh;
 
-    bool sendTriggerRequest(std::string type);
-    std::map< std::string, ros::ServiceClient > _clients;
-
     std::string node_name_{"node_name"};
 
     // SUBSCRIBERS //
@@ -122,9 +119,6 @@ class motionCommandFilter {
     ros::Publisher pub_beacon_deploy_virtual_;
 
     ros::ServiceClient stair_mode_client_;
-
-    ros::ServiceClient stair_mode_on_;
-    ros::ServiceClient stair_mode_off_;
 
     string vehicle_name_;
     int loop_rate_;
@@ -225,7 +219,6 @@ class motionCommandFilter {
     double planning_link_z_offset_;
     double stair_mode_pitch_thresh_;
 
-    bool is_up_stairs_;
     std::map< std::string, ros::ServiceClient > clients_;
 
     double stair_align_thresh_;
@@ -236,10 +229,13 @@ class motionCommandFilter {
     geometry_msgs::Point path_goal_point_;
     geometry_msgs::Point last_path_goal_point_;
     bool have_new_path_;
-
+    bool is_stair_mode_on_;
+    bool is_up_stairs_;
+    bool is_down_stairs_;
+    float align_heading_error_;
+    double stair_mode_fwd_speed_;
 
     std_srvs::SetBool stair_mode_srv_;
-
 
     bool beacon_drop_complete_;
     std_msgs::Bool deploy_beacon_;
