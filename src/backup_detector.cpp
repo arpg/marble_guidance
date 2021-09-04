@@ -13,7 +13,7 @@ void backupDetector::init() {
   sub_octomap_ = nh_.subscribe("octomap", 1, &backupDetector::octomapCb, this);
   sub_imu_ = nh_.subscribe("imu", 1, &backupDetector::imuCb, this);
 
-  pub_backup_ = nh_.advertise<std_msgs::Bool>("enable_backup", 1);
+  pub_backup_ = nh_.advertise<marble_guidance::BackupStatus>("backup_status_msg", 1);
   pub_query_point_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("query_points", 1);
   pub_transformed_query_point_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("transformed_query_points", 1);
   pub_occupied_points_pcl_ = nh_.advertise<sensor_msgs::PointCloud2>("occupied_points", 1);
@@ -37,7 +37,9 @@ void backupDetector::init() {
 
   base_link_frame_ = vehicle_name_ + "/base_link";
 
-  backup_msg_.data = false;
+  backup_status_msg_.enable_backup = false;
+  backup_status_msg_.close_on_left = false;
+  backup_status_msg_.close_on_right = false;
   enable_debug_ = true;
   close_obstacle_flag_ = false;
   bad_attitude_flag_ = false;
@@ -48,7 +50,7 @@ void backupDetector::init() {
   query_point_spacing_ = resolution_;
 
   // Merged OcTree
-  occupancyTree_ = new octomap::OcTree(resolution_);
+  occupancyTree_ = new octomap::RoughOcTree(resolution_);
 
   // Generate the query points for octomap voxel lookups
   generateQueryPoints();
@@ -122,10 +124,10 @@ void backupDetector::publishQueryPointsPcl(){
 void backupDetector::octomapCb(const octomap_msgs::Octomap::ConstPtr msg)
 {
   if(!have_octomap_) have_octomap_ = true;
-  //ROS_INFO("Occupancy octomap callback called");
+  // ROS_INFO("Occupancy octomap callback called");
   if (msg->data.size() == 0) return;
   delete occupancyTree_;
-  occupancyTree_ = (octomap::OcTree*)octomap_msgs::binaryMsgToMap(*msg);
+  occupancyTree_ = (octomap::RoughOcTree*)octomap_msgs::binaryMsgToMap(*msg);
 }
 
 void backupDetector::imuCb(const sensor_msgs::ImuConstPtr& imu_msg){
@@ -164,18 +166,23 @@ void backupDetector::processOctomap(){
   close_cell_indices_vec_.clear();
   float voxel_radius;
   close_obstacle_flag_ = false;
+  close_on_left_flag_ = false;
+  close_on_right_flag_ = false;
 
   for(int i = 0; i < num_query_points_; i++){
-    octomap::OcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
+    octomap::RoughOcTreeNode* current_node = occupancyTree_->search(coord_key_vec_[i]);
     if(current_node && current_node->getLogOdds() >= 0.0){
       // Cell is occupied, need to track the index
       occupied_cell_indices_vec_.push_back(i);
       // Check if the occupied cell is within our safety cylinder
       voxel_radius = sqrt(pow(query_point_vec_[i].x, 2) + pow(query_point_vec_[i].y, 2));
-      if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_){
-        if(query_point_vec_[i].z > safety_z_min_ && query_point_vec_[i].z < safety_z_max_){
-         close_obstacle_flag_ = true;
-         close_cell_indices_vec_.push_back(i);
+      if(voxel_radius < safety_radius_ && query_point_vec_[i].z > safety_z_min_ && query_point_vec_[i].z < safety_z_max_){
+        close_obstacle_flag_ = true;
+        close_cell_indices_vec_.push_back(i);
+        if(query_point_vec_[i].y < 0.0){
+          close_on_left_flag_ = true;
+        } else {
+          close_on_right_flag_ = true;
         }
       }
     }
@@ -227,8 +234,11 @@ void backupDetector::processIMU(){
 }
 
 void backupDetector::publishBackupMsg(){
-  backup_msg_.data = (close_obstacle_flag_ || bad_attitude_flag_);
-  pub_backup_.publish(backup_msg_);
+  // backup_msg_.data = (close_obstacle_flag_ || bad_attitude_flag_);
+  backup_status_msg_.enable_backup = (close_obstacle_flag_ || bad_attitude_flag_);
+  backup_status_msg_.close_on_left = close_on_left_flag_;
+  backup_status_msg_.close_on_right = close_on_right_flag_;
+  pub_backup_.publish(backup_status_msg_);
 }
 
 bool backupDetector::haveIMU(){
