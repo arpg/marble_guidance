@@ -28,15 +28,11 @@
 
 // Octomap libaries
 #include <octomap/octomap.h>
-//#include <octomap/OcTreeStamped.h>
-#include <rough_octomap/RoughOcTree.h>
+#include <octomap/OcTreeStamped.h>
 #include <octomap/OcTreeKey.h>
 #include <octomap/ColorOcTree.h>
 #include <octomap_msgs/Octomap.h>
-// #include <octomap_msgs/conversions.h>
-#include <rough_octomap/conversions.h>
-
-#include <marble_guidance/BackupStatus.h>
+#include <octomap_msgs/conversions.h>
 
 using namespace std;
 
@@ -90,8 +86,7 @@ class backupDetector{
     std::string map_frame_;
     std::string base_link_frame_;
 
-    // std_msgs::Bool backup_msg_;
-    marble_guidance::BackupStatus backup_status_msg_;
+    std_msgs::Bool backup_msg_;
 
     double safety_radius_;
     double safety_z_min_;
@@ -107,8 +102,6 @@ class backupDetector{
     vector <geometry_msgs::PointStamped> transformed_query_point_vec_;
 
     bool close_obstacle_flag_;
-    bool close_on_left_flag_;
-    bool close_on_right_flag_;
 
     // imuCb
     double roll_;
@@ -118,7 +111,7 @@ class backupDetector{
     bool bad_attitude_flag_;
 
     // Octomap
-    octomap::RoughOcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
+    octomap::OcTree* occupancyTree_; // OcTree object for holding occupancy Octomap
     vector<octomap::OcTreeKey> coord_key_vec_;
     vector<int> occupied_cell_indices_vec_;
     vector<int> close_cell_indices_vec_;

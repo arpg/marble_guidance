@@ -1,18 +1,17 @@
 <launch>
 
-  <arg name="vehicle_name"            default="D02"/>
+  <arg name="vehicle_name"            default="D01"/>
   <arg name="enable_ground_truth"     default="false"/>
 
   <arg name="max_yawrate"             default="0.5"/>
   <arg name="max_forward_speed"       default="1.0"/>
-  <arg name="lookahead_distance"      default="0.75"/>
-  <arg name="yawrate_k0"              default=".75"/>
-  <arg name="yawrate_kd"              default=".5"/>
-  <arg name="yaw_error_k"             default="1.5"/>
+  <arg name="lookahead_distance"      default="1.0"/>
+  <arg name="yawrate_k0"              default="1.0"/>
+  <arg name="yawrate_kd"              default="1.0"/>
 
   <arg name="path_topic"               default="planned_path"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
-  <arg name="cmd_vel_topic"            default="nav_vel2"/>
+  <arg name="cmd_vel_topic"            default="spot/cmd_vel"/>
 
   <arg name="map_res"        default=".15"/>
 
@@ -55,6 +54,6 @@
     <arg name="vehicle_name"     value="$(arg vehicle_name)"/>
     <arg name="cmd_vel_topic"    value="$(arg cmd_vel_topic)"/>
     <arg name="is_spot"          value="true"/>
-</include>
+  </include>
 
 </launch>

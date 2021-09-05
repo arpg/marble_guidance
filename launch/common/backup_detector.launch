@@ -24,8 +24,6 @@
     <param name="num_query_point_cols"              value="20"/>
     <param name="num_query_point_layers"            value="15"/>
 
-    <param name="close_beacon_turn_angle"           value="0.5"/>
-
   </node>
 
 </launch>

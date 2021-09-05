@@ -18,15 +18,15 @@ void pathFollower::init() {
     pub_motion_cmd_ = nh_.advertise<marble_guidance::MotionCmd>("motion_cmd", 10);
 
     pnh_.param("turn_in_place_thresh", turn_in_place_thresh_, 1.0);
-    pnh_.param("end_turn_in_place_thresh", end_turn_in_place_thresh_, 0.2);
     pnh_.param("turn_in_place_yawrate", turn_in_place_yawrate_, 1.0);
     pnh_.param("yawrate_k0", yawrate_k0_, 1.0);
     pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
-    pnh_.param("yawrate_max", yawrate_max_ , 0.5);
+    pnh_.param("yawrate_max", yawrate_max_ , 1.0);
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
     pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
+    pnh_.param("enable_debug", debug_, false);
     pnh_.param("stopping_distance", stopping_dist_, 0.25);
     pnh_.param("slow_down_distance", slow_down_dist_, 1.0);
     pnh_.param("sim_start", sim_start_, false);
@@ -124,7 +124,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     lookahead_point_msg_.point = lookahead_pose_.position;
     pub_lookahead_point_.publish(lookahead_point_msg_);
 
-    if(attractor_d < 0.5){
+    if(attractor_d < 0.5 || new_path_){
       sim_start_ = false;
       have_lookahead = false;
     }
@@ -137,7 +137,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     }
 
     if(!l){
-      //ROS_INFO_THROTTLE(5.0, "Empty path...");
+      ROS_INFO_THROTTLE(1.0, "Empty path...");
       return false;
     }
 
@@ -158,7 +158,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
 
       if(i == 0){
-        //ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
+        ROS_INFO_THROTTLE(1.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
         if(dist <= 2.0*lookahead_dist_thresh_){
 
@@ -196,35 +196,23 @@ void pathFollower::computeControlCommands(){
     float lookahead_angle_error = wrapAngle(relative_lookahead_heading - current_heading_);
     float dist = distanceTwoPoints2D(current_pos_, lookahead_pose_.position);
 
-    if(abs(lookahead_angle_error) < turn_in_place_thresh_ && !turn_in_place_){
+    if(abs(lookahead_angle_error) < turn_in_place_thresh_){
       // Use an exponential attractor to generate yawrate cmds
       yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -yawrate_max_, yawrate_max_);
+      turn_in_place_ = false;
     } else {
       // Lookahead angle error is larger than threshold, so we should turn in place
       yawrate_cmd_ = sat(yawrate_k0_*lookahead_angle_error, -turn_in_place_yawrate_, turn_in_place_yawrate_);
-
-      if(!turn_in_place_){
-        turn_in_place_ = true;
-      }
-
-      if(turn_in_place_){
-        if(abs(lookahead_angle_error) < end_turn_in_place_thresh_){
-          turn_in_place_ = false;
-        }
-      }
-
+      turn_in_place_ = true;
     }
 
     // FORWARD SPEED COMMAND
     if(!turn_in_place_){
       // Slow down if we are approaching the lookahead point
-      u_cmd_ = sat(u_cmd_max_*(1.0 - sat( (slow_down_dist_ -  dist)/slow_down_dist_, 0.0, 1.0) ), 0.0, u_cmd_max_);
-      //ROS_INFO_THROTTLE(.25,"%f -- Max, %f -- Lookahead_dist", u_cmd_max_, dist);
-      //ROS_INFO_THROTTLE(.25,"%f -- Slowdown from lookahead", u_cmd_);
+      u_cmd_ = sat(u_cmd_max_*(1 - sat( (slow_down_dist_ -  dist)/slow_down_dist_, 0.0, 1.0) ), 0.0, u_cmd_max_);
       if(enable_speed_regulation_){
-        u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.01, u_cmd_max_);
+        u_cmd_ = sat(u_cmd_ - yaw_error_k_*abs(lookahead_angle_error), 0.0, u_cmd_max_);
       }
-      //ROS_INFO_THROTTLE(.25,"%f -- Regulation from yaw error", u_cmd_);
     } else {
       u_cmd_ = 0.0;
     }
@@ -234,7 +222,7 @@ void pathFollower::computeControlCommands(){
       yawrate_cmd_ = 0.0;
     }
   } else {
-    //ROS_INFO_THROTTLE(5.0,"Do not have a current lookahead point.");
+    ROS_INFO_THROTTLE(1.0,"Do not have a current lookahead point.");
     u_cmd_ = 0.0;
     yawrate_cmd_ = 0.0;
   }
@@ -307,9 +295,9 @@ float pathFollower::distanceTwoPoints2D(geometry_msgs::Point p1, geometry_msgs::
 float pathFollower::wrapAngle(float angle){
 
     if (angle > M_PI){
-        angle -= 2.0*M_PI;
+        angle -= 2*M_PI;
     } else if( angle < -M_PI){
-        angle += 2.0*M_PI;
+        angle += 2*M_PI;
     }
     return angle;
 
