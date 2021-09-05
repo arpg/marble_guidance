@@ -67,6 +67,7 @@ class motionCommandFilter {
     void computeBeaconDropMotionCmds();
     geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
     bool isUpstairs(const geometry_msgs::Point lookahead_point);
+    bool isDownstairs(const geometry_msgs::Point lookahead_point);
     bool checkStairProgress();
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
@@ -213,9 +214,11 @@ class motionCommandFilter {
     double backup_turn_thresh_;
 
     bool is_spot_;
+    bool offline_test_;
     bool stair_mode_cmd_;
     double planning_link_z_offset_;
     double stair_mode_pitch_thresh_;
+    double stair_goal_point_offset_;
 
     double stair_align_thresh_;
     double stair_turnaround_thresh_;
@@ -230,7 +233,8 @@ class motionCommandFilter {
     bool is_down_stairs_;
     float align_heading_error_;
     double stair_mode_fwd_speed_;
-
+    double z_diff_thresh_;
+    float start_stair_z_;
     std_srvs::SetBool stair_mode_srv_;
 
     bool beacon_drop_complete_;

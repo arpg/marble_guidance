@@ -53,17 +53,20 @@ void motionCommandFilter::init() {
     pnh_.param("close_beacon_turn_angle", close_beacon_turn_angle_, 0.5);
 
     pnh_.param("is_spot", is_spot_, false);
+    pnh_.param("offline_test", offline_test_, false);
     pnh_.param("stair_mode_pitch_thresh", stair_mode_pitch_thresh_, 0.25);
     pnh_.param("stair_align_thresh", stair_align_thresh_, 0.15);
     pnh_.param("stair_turnaround_thresh", stair_turnaround_thresh_, 0.15);
     pnh_.param("stair_mode_forward_speed", stair_mode_fwd_speed_, 0.5);
+    
+    pnh_.param("z_diff_thresh", z_diff_thresh_, 0.25);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
 
     string stair_client_string = "/" + vehicle_name_ + "/spot/stair_mode";
 
     stair_mode_client_ = nh_.serviceClient<std_srvs::SetBool>(stair_client_string);
-
+    
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
     a_turnaround_ = 1;
@@ -99,6 +102,8 @@ void motionCommandFilter::init() {
     is_stair_mode_on_ = false;
     is_up_stairs_ = false;
     is_down_stairs_ = false;
+
+    stair_goal_point_offset_ = 0.5;
 
 }
 
@@ -280,10 +285,11 @@ void motionCommandFilter::determineMotionState(){
           is_up_stairs_ = false;
           align_heading_error_ = 0.0;
           stair_mode_srv_.request.data = true;
-          if(stair_mode_client_.call(stair_mode_srv_)){
+          if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
             if(!is_stair_mode_on_) is_stair_mode_on_ = true;
             state_ = motionCommandFilter::STAIR_MODE_UP;
             started_stairs_ = false;
+	    start_stair_z_ = current_pos_.z;
             ROS_INFO("Motion filter: Spot stair mode engaged.");
             float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
             align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
@@ -299,16 +305,17 @@ void motionCommandFilter::determineMotionState(){
             // Might be handled by blacklisting
           }
 
-        } else {
+        } else if (isDownstairs(path_goal_point_)) {
           ROS_INFO("ENTERING STAIR MODE DOWN");
           started_stairs_ = false;
           is_down_stairs_ = false;
 
           stair_mode_srv_.request.data = true;
-          if(stair_mode_client_.call(stair_mode_srv_)){
+          if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
           //if(true){
             if(!is_stair_mode_on_) is_stair_mode_on_ = true;
 
+	    start_stair_z_ = current_pos_.z;
             // Path is down stairs, need to turn around first
             state_ = motionCommandFilter::STAIR_MODE_DOWN;
             float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
@@ -655,7 +662,7 @@ void motionCommandFilter::filterCommands(){
   // Handle spot stair mode off when not in stairs up / down mode
   if(is_spot_ && is_stair_mode_on_ && !stair_mode_cmd_ && !(state_ == motionCommandFilter::STAIR_MODE_UP || state_ == motionCommandFilter::STAIR_MODE_DOWN)){
     stair_mode_srv_.request.data = false;
-    if(stair_mode_client_.call(stair_mode_srv_)){
+    if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
     //if(true){
       is_stair_mode_on_ = false;
       ROS_INFO("Motion filter: Spot stair mode disengaged.");
@@ -835,7 +842,16 @@ void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_c
 
 bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point){
 
-  if(lookahead_point.z > (current_pos_.z + planning_link_z_offset_)){
+  if(lookahead_point.z > (current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_)){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool motionCommandFilter::isDownstairs(const geometry_msgs::Point lookahead_point){
+
+  if(lookahead_point.z < (current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_)){
     return true;
   } else {
     return false;
@@ -844,8 +860,10 @@ bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point)
 
 bool motionCommandFilter::checkStairProgress(){
   if(!started_stairs_){
-    if(abs(current_pitch_) > stair_mode_pitch_thresh_){
+    float z_diff = current_pos_.z - start_stair_z_; 	  
+    if(abs(current_pitch_) > stair_mode_pitch_thresh_ && abs(z_diff) > z_diff_thresh_){
       started_stairs_ = true;
+      ROS_INFO("STARTED STAIRS!!");
     }
     return false;
   } else {
