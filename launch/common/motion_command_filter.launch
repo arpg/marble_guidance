@@ -17,11 +17,17 @@
     <remap from="motion_command_filter/cmd_vel"           to="$(arg cmd_vel_topic)"/>
     <remap from="motion_command_filter/estop_cmd"         to="estop"/>
     <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
-    <remap from="motion_command_filter/enable_backup"     to="enable_backup"/>
+    <remap from="motion_command_filter/backup_status_msg" to="backup_detector/backup_status_msg"/>
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
     <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
-    <remap from="motion_command_filter/beacon_drop_cmd"   to="beacon"/>
+
+    <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy_beacon"/>
+    <remap from="motion_command_filter/deploy"            to="deploy"/>
+    <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
+
     <remap from="motion_command_filter/stair_mode_cmd"    to="is_near_stair"/>
+
+    <param name="is_spot"                         value="$(arg is_spot)"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
@@ -36,10 +42,10 @@
     <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
 
     <!-- Motion filter parameters -->
-    <param name="fwd_speed_lp_filter_const_up"      value=".75"/>
-    <param name="fwd_speed_lp_filter_const_down"    value=".95"/>
-    <param name="yaw_rate_lp_filter_const_up"      value=".75"/>
-    <param name="yaw_rate_lp_filter_const_down"    value=".95"/>
+    <param name="fwd_speed_lp_filter_const_up"      value=".9"/>
+    <param name="fwd_speed_lp_filter_const_down"    value=".9"/>
+    <param name="yaw_rate_lp_filter_const_up"      value=".25"/>
+    <param name="yaw_rate_lp_filter_const_down"    value=".25"/>
     <param name="max_forward_speed"                value="$(arg max_forward_speed)"/>
 
     <!-- Safety params -->
@@ -47,11 +53,13 @@
     <param name="close_side_speed"                value="0.1"/>
 
     <param name="beacon_clear_motion_duration"    value="1.0"/>
-    <param name="is_spot"                         value="$(arg is_spot)"/>
+    <param name="beacon_drop_motion_settle_duration"    value="2.0"/>
 
+    <!-- Spot Stair-mode parameters -->
     <param name="stair_mode_pitch_thresh"         value=".1"/>
     <param name="stair_align_thresh"              value=".8"/>
     <param name="stair_turnaround_thresh"         value=".15"/>
+    <param name="stair_mode_fwd_speed"            value=".5"/>
 
   </node>
 
