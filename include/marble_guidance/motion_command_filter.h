@@ -90,6 +90,8 @@ class motionCommandFilter {
     ros::NodeHandle priv_nh;
     std::string node_name_{"node_name"};
 
+    string vehicle_name_;
+
     // SUBSCRIBERS //
     ros::Subscriber sub_odom_;
     ros::Subscriber sub_path_motion_cmd_;
@@ -200,6 +202,29 @@ class motionCommandFilter {
 
     float min_lidar_dist_;
     double backup_turn_thresh_;
+
+    bool is_spot_;
+    bool stair_mode_cmd_;
+    double planning_link_z_offset_;
+    double stair_mode_pitch_thresh_;
+
+    std::map< std::string, ros::ServiceClient > clients_;
+
+    double stair_align_thresh_;
+    double stair_turnaround_thresh_;
+    bool do_stair_align_;
+    bool do_stair_turnaround_;
+    bool started_stairs_;
+    geometry_msgs::Point path_goal_point_;
+    geometry_msgs::Point last_path_goal_point_;
+    bool have_new_path_;
+    bool is_stair_mode_on_;
+    bool is_up_stairs_;
+    bool is_down_stairs_;
+    float align_heading_error_;
+    double stair_mode_fwd_speed_;
+
+    std_srvs::SetBool stair_mode_srv_;
 
     bool beacon_drop_complete_;
     std_msgs::Bool deploy_beacon_;
