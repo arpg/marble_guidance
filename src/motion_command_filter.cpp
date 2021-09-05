@@ -215,16 +215,15 @@ void motionCommandFilter::checkConnections(){
 }
 
 void motionCommandFilter::determineMotionState(){
-/*
-    stair_mode_srv_.request.data = false;
+     
+   /* stair_mode_srv_.request.data = false;
     if(stair_mode_client_.call(stair_mode_srv_)){
     //if(true){
       is_stair_mode_on_ = false;
       ROS_INFO("Motion filter: Spot stair mode disengaged.");
     } else {
       ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
-    }
- */
+    }*/
 
 
   // Motion state machine based on information received from callbacks
