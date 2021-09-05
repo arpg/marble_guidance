@@ -35,6 +35,8 @@
 #include <tf/tf.h>
 #include <math.h>
 
+#include <std_srvs/SetBool.h>
+
 using namespace std;
 namespace motion_command_filter{
 
@@ -54,6 +56,7 @@ class motionCommandFilter {
     void backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
+    void stairModeCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
     void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
     void filterCommands();
@@ -63,6 +66,8 @@ class motionCommandFilter {
     void determineMotionState();
     void computeBeaconDropMotionCmds();
     geometry_msgs::Twist computeBackupCmd(const geometry_msgs::Point lookahead);
+    bool isUpstairs(const geometry_msgs::Point lookahead_point);
+    bool checkStairProgress();
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
@@ -80,6 +85,8 @@ class motionCommandFilter {
       BEACON_MOTION = 9,
       ERROR = 10,
       IDLE = 11,
+      STAIR_MODE_UP = 12,
+      STAIR_MODE_DOWN = 13,
     };
 
  private:
@@ -102,6 +109,7 @@ class motionCommandFilter {
     ros::Subscriber sub_husky_safety_;
     ros::Subscriber sub_sf_command_;
     ros::Subscriber sub_beacon_cmd_;
+    ros::Subscriber sub_stair_mode_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -109,7 +117,8 @@ class motionCommandFilter {
     ros::Publisher pub_beacon_deploy_;
     ros::Publisher pub_beacon_deploy_virtual_;
 
-    string vehicle_name_;
+    ros::ServiceClient stair_mode_client_;
+
     int loop_rate_;
     bool use_stamped_twist_;
     double connection_failure_thresh_;
@@ -207,8 +216,6 @@ class motionCommandFilter {
     bool stair_mode_cmd_;
     double planning_link_z_offset_;
     double stair_mode_pitch_thresh_;
-
-    std::map< std::string, ros::ServiceClient > clients_;
 
     double stair_align_thresh_;
     double stair_turnaround_thresh_;
