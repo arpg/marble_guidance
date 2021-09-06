@@ -72,6 +72,7 @@ class motionCommandFilter {
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
+    float dist3D(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
 
     enum Constants{
       STARTUP = 0,

@@ -59,8 +59,8 @@
 
     <!-- Spot Stair-mode parameters -->
     <param name="stair_mode_pitch_thresh"         value=".1"/>
-    <param name="stair_align_thresh"              value=".8"/>
-    <param name="stair_turnaround_thresh"         value=".15"/>
+    <param name="stair_align_thresh"              value=".25"/>
+    <param name="stair_turnaround_thresh"         value=".25"/>
     <param name="stair_mode_fwd_speed"            value=".5"/>
 
   </node>

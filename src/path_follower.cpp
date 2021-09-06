@@ -145,7 +145,10 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     float dist;
     for(int i = l-1; i >= 0; i--){
       if(is_spot_){
-        dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
+        geometry_msgs::Point current_position = current_pos_;
+        // Add .5 to adjust for the planning link z offset
+        current_position.z = current_pos_.z + .5;
+        dist = distanceTwoPoints3D(current_position, path_poses[i].pose.position);
       }else {
         dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
       }
