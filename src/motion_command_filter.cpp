@@ -856,7 +856,8 @@ void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_c
 }
 
 bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point){
-
+  float z_diff =(current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_) - lookahead_point.z;
+  // ROS_INFO("z_diff: %f", z_diff);
   if(lookahead_point.z > (current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_)){
     return true;
   } else {
