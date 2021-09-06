@@ -63,6 +63,7 @@ class pathFollower{
     // Publishers
     ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_lookahead_point_;
+    ros::Publisher pub_stair_lookahead_point_;
     ros::Publisher pub_motion_cmd_;
 
     // Variables
@@ -82,6 +83,7 @@ class pathFollower{
     float lookahead_dist_;
     double lookahead_dist_thresh_;
     geometry_msgs::PointStamped lookahead_point_msg_;
+    geometry_msgs::PointStamped stair_lookahead_point_msg_;
     geometry_msgs::Point goal_point_;
 
     nav_msgs::Odometry current_odom_;

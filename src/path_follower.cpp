@@ -15,6 +15,7 @@ void pathFollower::init() {
     sub_backup_ = nh_.subscribe("enable_backup", 1, &pathFollower::backupCb, this);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_lookahead_point_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead_point", 10);
+    pub_stair_lookahead_point_ = nh_.advertise<geometry_msgs::PointStamped>("stair_lookahead_point", 10);
     pub_motion_cmd_ = nh_.advertise<marble_guidance::MotionCmd>("motion_cmd", 10);
 
     pnh_.param("turn_in_place_thresh", turn_in_place_thresh_, 1.0);
@@ -24,6 +25,7 @@ void pathFollower::init() {
     pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
     pnh_.param("yawrate_max", yawrate_max_ , 0.5);
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
+    pnh_.param("lookahead_distance_stairs_threshold", lookahead_dist_stair_thresh_, 2.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
     pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
@@ -153,6 +155,13 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
         dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
       }
       //ROS_INFO("index: %d, dist: %f", i, dist);
+      if(dist >= lookahead_dist_stair_thresh_){
+        stair_lookahead_pose_stairs_ = path_poses[i].pose;
+        stair_lookahead_point_msg_.header.stamp = ros::Time::now();
+        stair_lookahead_point_msg_.point = stair_lookahead_pose_.position;
+        pub_stair_lookahead_point_.publish(stair_lookahead_point_msg_);
+      }
+
       if(dist <= lookahead_dist_thresh_){
 
         lookahead_pose_ = path_poses[i].pose;
@@ -256,6 +265,7 @@ void pathFollower::publishMotionCmd(){
   path_motion_cmd_msg_.cmd_vel = cmd_vel_msg_;
   path_motion_cmd_msg_.motion_type = turn_in_place_;
   path_motion_cmd_msg_.lookahead_point = lookahead_pose_.position;
+  path_motion_cmd_msg_.lookahead_point_stairs = stair_lookahead_pose_.position;
   path_motion_cmd_msg_.goal_point = goal_point_;
 
   pub_motion_cmd_.publish(path_motion_cmd_msg_);

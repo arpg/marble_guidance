@@ -127,6 +127,7 @@ void motionCommandFilter::pathMotionCmdCb(const marble_guidance::MotionCmdConstP
   path_cmd_vel_ = msg->cmd_vel;
   //ROS_INFO("Motion cmd x: %f", path_cmd_vel_.linear.x);
   path_lookahead_ = msg->lookahead_point;
+  stair_lookahead_ = msg->lookahead_point;
   path_goal_point_ = msg->goal_point;
   // ROS_INFO("lookahead_x: %f, gp_x: %f", path_goal_point_.x, last_path_goal_point_.x);
   // float gp_dist = 0.0;
@@ -285,7 +286,8 @@ void motionCommandFilter::determineMotionState(){
       if(is_spot_ && stair_mode_cmd_){
         //ROS_INFO("ENTERING STAIR MODE...");
         // if the path is upstairs, switch to stair mode and start following
-        if(isUpstairs(path_goal_point_)){
+        //if(isUpstairs(path_goal_poin_)){
+        if(isUpstairs(stair_lookahead_)){
           ROS_INFO("ENTERING STAIR MODE UP");
           is_up_stairs_ = false;
           align_heading_error_ = 0.0;
@@ -310,7 +312,8 @@ void motionCommandFilter::determineMotionState(){
             // Might be handled by blacklisting
           }
 
-        } else if (isDownstairs(path_goal_point_)) {
+        //} else if (isDownstairs(path_goal_point_)) {
+        } else if (isDownstairs(stair_lookahead_)) {
           ROS_INFO("ENTERING STAIR MODE DOWN");
           started_stairs_ = false;
           is_down_stairs_ = false;

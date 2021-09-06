@@ -148,6 +148,7 @@ class motionCommandFilter {
     int traj_motion_type_;
     geometry_msgs::Twist traj_cmd_vel_;
     geometry_msgs::Point traj_lookahead_;
+    geometry_msgs::Point stair_lookahead_;
 
     // followTrajCb
     bool enable_trajectory_following_;
