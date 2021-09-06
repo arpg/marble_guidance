@@ -35,6 +35,7 @@
       <arg name="yawrate_kd"          value="$(arg yawrate_kd)" />
       <arg name="yaw_error_k"         value="$(arg yaw_error_k)" />
       <arg name="sim"                 value="$(arg sim)" />
+      <arg name="is_spot"             value="false"/>
 
   </include>
 
@@ -70,6 +71,7 @@
     <arg name="max_yawrate"         value="$(arg max_yawrate)" />
     <arg name="yaw_error_k"         value="$(arg yaw_error_k)" />
     <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
+    <arg name="is_spot"             value="false"/>
 
   </include>
 

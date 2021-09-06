@@ -70,6 +70,7 @@ class pathFollower{
     string vehicle_frame_;
 
     bool debug_;
+    bool is_spot_;
 
     nav_msgs::Path current_path_;
     nav_msgs::Path conditioned_path_;

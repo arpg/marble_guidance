@@ -30,6 +30,7 @@ void pathFollower::init() {
     pnh_.param("stopping_distance", stopping_dist_, 0.25);
     pnh_.param("slow_down_distance", slow_down_dist_, 1.0);
     pnh_.param("sim_start", sim_start_, false);
+    pnh_.param("is_spot", is_spot_, false);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
     vehicle_frame_ = vehicle_name_ + "/base_link";
@@ -143,8 +144,11 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 
     float dist;
     for(int i = l-1; i >= 0; i--){
-      //dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
-      dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
+      if(is_spot_){
+        dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
+      }else {
+        dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
+      }
       //ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
 
@@ -259,7 +263,7 @@ void pathFollower::pathCb(const nav_msgs::PathConstPtr& path_msg){
   current_path_ = *path_msg;
   if(!have_path_) have_path_ = true;
 
-  if(!new_path_){	    
+  if(!new_path_){
     if(current_path_.poses.size()){
       new_path_ = true;
     }

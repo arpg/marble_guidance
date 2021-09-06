@@ -8,6 +8,8 @@
   <arg name="yawrate_kd"            default="1.0"/>
   <arg name="yaw_error_k"           default="1.0"/>
 
+  <arg name="is_spot"               default="false"/>
+
   <arg name="sim"                   default="false"/>
   <arg name="path_topic"            default="scan_plan_node/path_out"/>
 <arg name="launch_prefix" default="gdb -ex run --args"/>
@@ -20,6 +22,7 @@
     <remap from="path_follower/enable_backup"   to="enable_backup"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
+    <param name="is_spot"                         value="$(arg is_spot)"/>
     <param name="loop_rate"                       value="20.0"/>
 
     <param name="yawrate_k0"                      value="$(arg yawrate_k0)"/>
@@ -35,6 +38,7 @@
     <param name="stopping_distance"               value="0.4"/>
     <param name="slow_down_distance"              value="0.65"/>
     <param name="sim_start"                       value="$(arg sim)"/>
+
 
   </node>
 

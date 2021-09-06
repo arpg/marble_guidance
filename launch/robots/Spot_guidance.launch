@@ -27,6 +27,7 @@
       <arg name="lookahead_distance"  value="$(arg lookahead_distance)" />
       <arg name="yawrate_k0"          value="$(arg yawrate_k0)" />
       <arg name="yawrate_kd"          value="$(arg yawrate_kd)" />
+      <arg name="is_spot"             value="true"/>
 
   </include>
 
