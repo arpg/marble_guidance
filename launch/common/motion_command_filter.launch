@@ -27,6 +27,7 @@
     <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
 
     <remap from="motion_command_filter/stair_mode_cmd"    to="is_near_stair"/>
+    <remap from="motion_command_filter/planning_task"     to="task"/>
 
     <param name="is_spot"                         value="$(arg is_spot)"/>
     <param name="offline_test"                    value="$(arg offline_test)"/>
@@ -34,6 +35,8 @@
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
     <param name="connection_failure_thresh"       value="1.0"/>
+
+    <!-- <param name="max_lookahead_dist"              value="2.0"/ -->
 
     <!-- Backup controller params -->
     <param name="yawrate_k0"                      value="0.5"/>

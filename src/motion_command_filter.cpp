@@ -26,6 +26,7 @@ void motionCommandFilter::init() {
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_beacon_deploy_ = nh_.advertise<std_msgs::Bool>("deploy",1);
     pub_beacon_deploy_virtual_ = nh_.advertise<std_msgs::Empty>("deploy_virtual",1);
+    pub_planning_task_ = nh_.advertise<std_msgs::String>("planning_task",1);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
@@ -102,6 +103,7 @@ void motionCommandFilter::init() {
     is_down_stairs_ = false;
 
     stair_goal_point_offset_ = 0.5;
+    planning_task_.data = "eop";
 
 }
 
@@ -439,8 +441,15 @@ void motionCommandFilter::determineMotionState(){
           // ROS_INFO("TOP OF STAIRS REACHED, EXITING STAIR MODE UP");
           ROS_INFO("TOP OF STAIRS REACHED");
           // Need to stay in stair mode until we leave area
-          state_ = motionCommandFilter::IDLE;
-          have_new_path_ = false;
+          float path_gp_dist = dist(path_goal_point_, current_pos_);
+          if(path_gp_dist <= 2.0){
+            ROS_INFO("Requesting new path...");
+            pub_planning_task_.publish(planning_task_);
+            state_ = motionCommandFilter::IDLE;
+            have_new_path_ = false;
+          } else {
+            state_ = motionCommandFilter::PATH_FOLLOW;
+          }
 
         }
 
@@ -856,7 +865,8 @@ bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point)
 }
 
 bool motionCommandFilter::isDownstairs(const geometry_msgs::Point lookahead_point){
-
+  float z_diff =(current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_) - lookahead_point.z;
+  ROS_INFO("z_diff: %f", z_diff);
   if(lookahead_point.z < (current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_)){
     return true;
   } else {

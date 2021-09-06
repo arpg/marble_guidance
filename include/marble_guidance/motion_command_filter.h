@@ -118,6 +118,7 @@ class motionCommandFilter {
     ros::Publisher pub_cmd_vel_stamped_;
     ros::Publisher pub_beacon_deploy_;
     ros::Publisher pub_beacon_deploy_virtual_;
+    ros::Publisher pub_planning_task_;
 
     ros::ServiceClient stair_mode_client_;
 
@@ -253,6 +254,8 @@ class motionCommandFilter {
     bool dropped_beacon_;
     ros::Time beacon_drop_time_;
     bool beacon_estop_;
+
+    std_msgs::String planning_task_;
 
 }; // class SimpleNodeClass
 
