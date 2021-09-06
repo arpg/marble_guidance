@@ -82,6 +82,7 @@ class pathFollower{
     geometry_msgs::Pose lookahead_pose_;
     float lookahead_dist_;
     double lookahead_dist_thresh_;
+    double lookahead_dist_stair_thresh_;
     geometry_msgs::PointStamped lookahead_point_msg_;
     geometry_msgs::PointStamped stair_lookahead_point_msg_;
     geometry_msgs::Point goal_point_;

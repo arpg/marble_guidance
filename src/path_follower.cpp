@@ -156,9 +156,8 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
       //ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist >= lookahead_dist_stair_thresh_){
-        stair_lookahead_pose_stairs_ = path_poses[i].pose;
         stair_lookahead_point_msg_.header.stamp = ros::Time::now();
-        stair_lookahead_point_msg_.point = stair_lookahead_pose_.position;
+        stair_lookahead_point_msg_.point = path_poses[i].pose.position;
         pub_stair_lookahead_point_.publish(stair_lookahead_point_msg_);
       }
 
@@ -265,7 +264,7 @@ void pathFollower::publishMotionCmd(){
   path_motion_cmd_msg_.cmd_vel = cmd_vel_msg_;
   path_motion_cmd_msg_.motion_type = turn_in_place_;
   path_motion_cmd_msg_.lookahead_point = lookahead_pose_.position;
-  path_motion_cmd_msg_.lookahead_point_stairs = stair_lookahead_pose_.position;
+  path_motion_cmd_msg_.lookahead_point_stairs = stair_lookahead_point_msg_.point;
   path_motion_cmd_msg_.goal_point = goal_point_;
 
   pub_motion_cmd_.publish(path_motion_cmd_msg_);
