@@ -220,12 +220,15 @@ void motionCommandFilter::checkConnections(){
 void motionCommandFilter::determineMotionState(){
 
   // Handle stair mode seperately from everything else
-  if(!stair_mode_cmd_ && is_stair_mode_on_ && !(state_ == motionCommandFilter::STAIR_MODE_UP || state_ == motionCommandFilter::STAIR_MODE_DOWN)){
+  //if(!stair_mode_cmd_ && is_stair_mode_on_ && !(state_ == motionCommandFilter::STAIR_MODE_UP || state_ == motionCommandFilter::STAIR_MODE_DOWN)){
+  if(!stair_mode_cmd_ && is_stair_mode_on_ && !checkStairProgress()){
     stair_mode_srv_.request.data = false;
-    if(stair_mode_client_.call(stair_mode_srv_)){
+    if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
     //if(true){
       is_stair_mode_on_ = false;
       ROS_INFO("Motion filter: Spot stair mode disengaged.");
+      ROS_INFO("Motion filter: Not on stairs, switching back to IDLE.");
+      state_ = motionCommandFilter::IDLE;
     } else {
       ROS_INFO_THROTTLE(1.0, "Motion filter: Spot stair mode disengage failed...");
     }
