@@ -240,6 +240,12 @@ class motionCommandFilter {
     float start_stair_z_;
     std_srvs::SetBool stair_mode_srv_;
 
+    bool end_stair_pause_;
+    ros::Time end_stair_time_;
+    bool stair_pause_complete_;
+    double stair_pause_time_s_;
+
+
     bool beacon_drop_complete_;
     std_msgs::Bool deploy_beacon_;
     std_msgs::Empty deploy_beacon_virtual_;
