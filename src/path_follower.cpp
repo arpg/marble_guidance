@@ -154,6 +154,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
       //ROS_INFO("index: %d, dist: %f", i, dist);
       if(dist <= lookahead_dist_thresh_){
+        // ROS_INFO_THROTTLE(.5, "dist: %f", dist);
 
         lookahead_pose_ = path_poses[i].pose;
         have_lookahead = true;
@@ -165,6 +166,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
 
       if(i == 0){
+
         //ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
         if(dist <= 2.0*lookahead_dist_thresh_){
@@ -179,6 +181,35 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
         }
       }
     }
+
+    if(!have_lookahead){
+      // Do a second check for twice the lookahead distance:
+      // This helps for the cases where spot goes down stairs and ends up away from the path
+      // ROS_INFO_THROTTLE(1.0,"Running second check");
+      for(int j = l-1; j >= 0; j--){
+        if(is_spot_){
+          geometry_msgs::Point current_position = current_pos_;
+          // Add .5 to adjust for the planning link z offset
+          current_position.z = current_pos_.z + .5;
+          dist = distanceTwoPoints3D(current_position, path_poses[j].pose.position);
+        }else {
+          dist = distanceTwoPoints2D(current_pos_, path_poses[j].pose.position);
+        }
+        //ROS_INFO("index: %d, dist: %f", i, dist);
+        if(dist <= 1.5*lookahead_dist_thresh_){
+          // ROS_INFO_THROTTLE(.5, "second dist: %f", dist);
+
+          lookahead_pose_ = path_poses[j].pose;
+          have_lookahead = true;
+          // Publish the lookahead
+          lookahead_point_msg_.header.stamp = ros::Time::now();
+          lookahead_point_msg_.point = lookahead_pose_.position;
+          pub_lookahead_point_.publish(lookahead_point_msg_);
+          return have_lookahead;
+        }
+      }
+    }
+
   }
 
   return have_lookahead;

@@ -285,7 +285,7 @@ void motionCommandFilter::determineMotionState(){
       if(is_spot_ && stair_mode_cmd_){
         //ROS_INFO("ENTERING STAIR MODE...");
         // if the path is upstairs, switch to stair mode and start following
-        if(isUpstairs(path_goal_point_)){
+        if(isUpstairs(path_lookahead_)){
           ROS_INFO("ENTERING STAIR MODE UP");
           is_up_stairs_ = false;
           align_heading_error_ = 0.0;
@@ -310,7 +310,7 @@ void motionCommandFilter::determineMotionState(){
             // Might be handled by blacklisting
           }
 
-        } else if (isDownstairs(path_goal_point_)) {
+        } else if (isDownstairs(path_lookahead_)) {
           ROS_INFO("ENTERING STAIR MODE DOWN");
           started_stairs_ = false;
           is_down_stairs_ = false;
@@ -856,9 +856,11 @@ void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_c
 }
 
 bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point){
-  float z_diff =(current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_) - lookahead_point.z;
-  // ROS_INFO("z_diff: %f", z_diff);
-  if(lookahead_point.z > (current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_)){
+  float val1 = current_pos_.z + planning_link_z_offset_;
+  float z_diff = lookahead_point.z - val1;
+  // ROS_INFO_THROTTLE(.5,"z_diff: %f", z_diff);
+  ROS_INFO("z_diff: %f", z_diff);
+  if(z_diff > stair_goal_point_offset_){
     return true;
   } else {
     return false;
@@ -866,9 +868,10 @@ bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point)
 }
 
 bool motionCommandFilter::isDownstairs(const geometry_msgs::Point lookahead_point){
-  float z_diff =(current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_) - lookahead_point.z;
-  //ROS_INFO("z_diff: %f", z_diff);
-  if(lookahead_point.z < (current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_)){
+  float val1 = current_pos_.z + planning_link_z_offset_;
+  float z_diff = lookahead_point.z - val1;
+  //ROS_INFO("val1: %f, val2: %f, z_diff: %f", val1, lookahead_point.z, z_diff);
+  if(z_diff < -stair_goal_point_offset_){
     return true;
   } else {
     return false;
