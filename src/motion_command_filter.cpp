@@ -127,7 +127,7 @@ void motionCommandFilter::pathMotionCmdCb(const marble_guidance::MotionCmdConstP
   path_cmd_vel_ = msg->cmd_vel;
   //ROS_INFO("Motion cmd x: %f", path_cmd_vel_.linear.x);
   path_lookahead_ = msg->lookahead_point;
-  stair_lookahead_ = msg->lookahead_point;
+  stair_lookahead_ = msg->lookahead_point_stairs;
   path_goal_point_ = msg->goal_point;
   // ROS_INFO("lookahead_x: %f, gp_x: %f", path_goal_point_.x, last_path_goal_point_.x);
   // float gp_dist = 0.0;
@@ -859,9 +859,11 @@ void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_c
 }
 
 bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point){
-  float z_diff =(current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_) - lookahead_point.z;
-  // ROS_INFO("z_diff: %f", z_diff);
-  if(lookahead_point.z > (current_pos_.z + planning_link_z_offset_ + stair_goal_point_offset_)){
+  float val1 = current_pos_.z + planning_link_z_offset_;
+  float z_diff = lookahead_point.z - val1;
+  ROS_INFO_THROTTLE(1.0,"z_diff: %f", z_diff);
+  //ROS_INFO("z_diff: %f", z_diff);
+  if(z_diff > stair_goal_point_offset_){
     return true;
   } else {
     return false;
@@ -869,9 +871,10 @@ bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point)
 }
 
 bool motionCommandFilter::isDownstairs(const geometry_msgs::Point lookahead_point){
-  float z_diff =(current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_) - lookahead_point.z;
-  //ROS_INFO("z_diff: %f", z_diff);
-  if(lookahead_point.z < (current_pos_.z + planning_link_z_offset_ - stair_goal_point_offset_)){
+  float val1 = current_pos_.z + planning_link_z_offset_;
+  float z_diff = lookahead_point.z - val1;
+  //ROS_INFO("val1: %f, val2: %f, z_diff: %f", val1, lookahead_point.z, z_diff);
+  if(z_diff < -stair_goal_point_offset_){
     return true;
   } else {
     return false;

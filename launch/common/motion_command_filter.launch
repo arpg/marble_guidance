@@ -8,7 +8,7 @@
   <arg name="yaw_error_k"         default="1.0" />
 
   <arg name="is_spot"             default="true"/>
-  <arg name="offline_test"        default="false"/>
+  <arg name="offline_test"        default="true"/>
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 

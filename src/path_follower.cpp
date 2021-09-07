@@ -25,7 +25,7 @@ void pathFollower::init() {
     pnh_.param("yawrate_kd", yawrate_kd_ , 1.0);
     pnh_.param("yawrate_max", yawrate_max_ , 0.5);
     pnh_.param("lookahead_distance_threshold", lookahead_dist_thresh_, 1.0);
-    pnh_.param("lookahead_distance_stairs_threshold", lookahead_dist_stair_thresh_, 2.0);
+    pnh_.param("lookahead_distance_stairs_threshold", lookahead_dist_stair_thresh_, 3.0);
     pnh_.param("max_forward_speed", u_cmd_max_, 1.0);
     pnh_.param("enable_speed_regulation", enable_speed_regulation_, false);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
@@ -40,6 +40,7 @@ void pathFollower::init() {
     // control_commands_msg_.header.frame_id = vehicle_frame_;
     // lookahead_point_msg_.header.frame_id = vehicle_name_ + "/map";
     lookahead_point_msg_.header.frame_id = "world";
+    stair_lookahead_point_msg_.header.frame_id = "world";
 		//lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
@@ -145,6 +146,8 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     }
 
     float dist;
+    stair_lookahead_point_msg_.point = path_poses[l-1].pose.position;
+    bool have_stair_lookahead_ = false;
     for(int i = l-1; i >= 0; i--){
       if(is_spot_){
         geometry_msgs::Point current_position = current_pos_;
@@ -155,13 +158,15 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
         dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
       }
       //ROS_INFO("index: %d, dist: %f", i, dist);
-      if(dist >= lookahead_dist_stair_thresh_){
+      if(dist < lookahead_dist_stair_thresh_ && !have_stair_lookahead_){
         stair_lookahead_point_msg_.header.stamp = ros::Time::now();
         stair_lookahead_point_msg_.point = path_poses[i].pose.position;
+        have_stair_lookahead_ = true;
         pub_stair_lookahead_point_.publish(stair_lookahead_point_msg_);
       }
 
       if(dist <= lookahead_dist_thresh_){
+        // ROS_INFO_THROTTLE(.5, "dist: %f", dist);
 
         lookahead_pose_ = path_poses[i].pose;
         have_lookahead = true;
@@ -169,10 +174,12 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
 				lookahead_point_msg_.header.stamp = ros::Time::now();
 				lookahead_point_msg_.point = lookahead_pose_.position;
 				pub_lookahead_point_.publish(lookahead_point_msg_);
+        pub_stair_lookahead_point_.publish(stair_lookahead_point_msg_);
 				return have_lookahead;
       }
 
       if(i == 0){
+
         //ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
         if(dist <= 2.0*lookahead_dist_thresh_){
@@ -183,10 +190,41 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
           lookahead_point_msg_.header.stamp = ros::Time::now();
           lookahead_point_msg_.point = lookahead_pose_.position;
           pub_lookahead_point_.publish(lookahead_point_msg_);
+          pub_stair_lookahead_point_.publish(stair_lookahead_point_msg_);
           return have_lookahead;
         }
       }
     }
+
+
+    if(!have_lookahead){
+      // Do a second check for twice the lookahead distance:
+      // This helps for the cases where spot goes down stairs and ends up away from the path
+      // ROS_INFO_THROTTLE(1.0,"Running second check");
+      for(int j = l-1; j >= 0; j--){
+        if(is_spot_){
+          geometry_msgs::Point current_position = current_pos_;
+          // Add .5 to adjust for the planning link z offset
+          current_position.z = current_pos_.z + .5;
+          dist = distanceTwoPoints3D(current_position, path_poses[j].pose.position);
+        }else {
+          dist = distanceTwoPoints2D(current_pos_, path_poses[j].pose.position);
+        }
+        //ROS_INFO("index: %d, dist: %f", i, dist);
+        if(dist <= 1.5*lookahead_dist_thresh_){
+          // ROS_INFO_THROTTLE(.5, "second dist: %f", dist);
+
+          lookahead_pose_ = path_poses[j].pose;
+          have_lookahead = true;
+          // Publish the lookahead
+          lookahead_point_msg_.header.stamp = ros::Time::now();
+          lookahead_point_msg_.point = lookahead_pose_.position;
+          pub_lookahead_point_.publish(lookahead_point_msg_);
+          return have_lookahead;
+        }
+      }
+    }
+
   }
 
   return have_lookahead;
