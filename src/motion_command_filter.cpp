@@ -61,6 +61,7 @@ void motionCommandFilter::init() {
     pnh_.param("stair_mode_forward_speed", stair_mode_fwd_speed_, 0.5);
 
     pnh_.param("z_diff_thresh", z_diff_thresh_, 0.25);
+    pnh_.param("stair_pause_time", stair_pause_time_s_, 5.0);
 
     pnh_.param<string>("vehicle_name", vehicle_name_, "X1");
 
@@ -104,6 +105,9 @@ void motionCommandFilter::init() {
 
     stair_goal_point_offset_ = 0.5;
     planning_task_.data = "eop";
+
+    end_stair_pause_ = false;
+    stair_pause_complete_ = false;
 
 }
 
@@ -292,6 +296,8 @@ void motionCommandFilter::determineMotionState(){
           is_up_stairs_ = false;
           align_heading_error_ = 0.0;
           stair_mode_srv_.request.data = true;
+          end_stair_pause_ = false;
+          stair_pause_complete_ = false;
           if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
             if(!is_stair_mode_on_) is_stair_mode_on_ = true;
             state_ = motionCommandFilter::STAIR_MODE_UP;
@@ -317,7 +323,8 @@ void motionCommandFilter::determineMotionState(){
           ROS_INFO("ENTERING STAIR MODE DOWN");
           started_stairs_ = false;
           is_down_stairs_ = false;
-
+          end_stair_pause_ = false;
+          stair_pause_complete_ = false;
           stair_mode_srv_.request.data = true;
           if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
           //if(true){
@@ -442,17 +449,33 @@ void motionCommandFilter::determineMotionState(){
         // ROS_INFO_THROTTLE(1.0,"CHECKING PROGRESS...");
         if(checkStairProgress()){
           // ROS_INFO("TOP OF STAIRS REACHED, EXITING STAIR MODE UP");
-          ROS_INFO("TOP OF STAIRS REACHED");
+          ROS_INFO_THROTTLE(1.0, "TOP OF STAIRS REACHED");
           // Need to stay in stair mode until we leave area
           float path_gp_dist = dist(path_goal_point_, current_pos_);
-          if(path_gp_dist <= 2.0){
-            ROS_INFO("Requesting new path...");
-            pub_planning_task_.publish(planning_task_);
-            state_ = motionCommandFilter::IDLE;
-            have_new_path_ = false;
-          } else {
-            state_ = motionCommandFilter::PATH_FOLLOW;
+
+          // We need to pause for a little bit so we don't go right back down the stairs
+          if(!end_stair_pause_){
+            end_stair_pause_ = true;
+            end_stair_time_ = ros::Time::now();
           }
+
+          float stair_pause_time_diff_s = (ros::Time::now() - end_stair_time_).toSec();
+          if(stair_pause_time_diff_s > stair_pause_time_s_){
+            stair_pause_complete_ = true;
+          } else {
+            ROS_INFO_THROTTLE(1.0, "Pausing for map stability...");
+          }
+          if(stair_pause_complete_){
+            if(path_gp_dist <= 2.0){
+              ROS_INFO("Requesting new path...");
+              pub_planning_task_.publish(planning_task_);
+              state_ = motionCommandFilter::IDLE;
+              have_new_path_ = false;
+            } else {
+              state_ = motionCommandFilter::PATH_FOLLOW;
+            }
+          }
+
 
         }
 
@@ -478,13 +501,27 @@ void motionCommandFilter::determineMotionState(){
 
         if(checkStairProgress()){
           ROS_INFO("BOTTOM OF STAIRS REACHED");
-          // If linear distance between goal point and last lookahead is less than some threshold
-          if(dist3D(path_goal_point_, path_lookahead_) > .25){
-            state_ = motionCommandFilter::PATH_FOLLOW;
-          } else {
-            state_ = motionCommandFilter::IDLE;
-            have_new_path_ = false;
+
+          // We need to pause for a little bit so we don't go right back down the stairs
+          if(!end_stair_pause_){
+            end_stair_pause_ = true;
+            end_stair_time_ = ros::Time::now();
           }
+
+          float stair_pause_time_diff_s = (ros::Time::now() - end_stair_time_).toSec();
+          if(stair_pause_time_diff_s > stair_pause_time_s_){
+            stair_pause_complete_ = true;
+          }
+          if(stair_pause_complete_){
+            // If linear distance between goal point and last lookahead is less than some threshold
+            if(dist3D(path_goal_point_, path_lookahead_) > .25){
+              state_ = motionCommandFilter::PATH_FOLLOW;
+            } else {
+              state_ = motionCommandFilter::IDLE;
+              have_new_path_ = false;
+            }
+          }
+
         }
 	    }
 
