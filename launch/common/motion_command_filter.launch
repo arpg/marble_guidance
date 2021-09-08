@@ -48,8 +48,7 @@
     <param name="beacon_clear_motion_duration"          value="1.5"/>
     <param name="beacon_drop_motion_settle_duration"    value="2.0"/>
 
-    <param name="slow_down_percent"                     value="25"/>
-
+    <param name="slow_down_percent"                     value="15"/>
 
   </node>
 
