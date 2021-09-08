@@ -668,6 +668,11 @@ void motionCommandFilter::filterCommands(){
 
         control_command_msg_.linear.x = stair_mode_fwd_speed_;
         control_command_msg_.angular.z = 0.0;
+
+        if(end_stair_pause_ == true && stair_pause_complete_ == false){
+          control_command_msg_.linear.x = 0.0;
+          control_command_msg_.angular.z = 0.0;
+        }
       }
       break;
 
@@ -687,6 +692,11 @@ void motionCommandFilter::filterCommands(){
 
         control_command_msg_.linear.x = -stair_mode_fwd_speed_;
         control_command_msg_.angular.z = 0.0;
+
+        if(end_stair_pause_ == true && stair_pause_complete_ == false){
+          control_command_msg_.linear.x = 0.0;
+          control_command_msg_.angular.z = 0.0;
+        }
       }
       break;
 
