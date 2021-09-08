@@ -20,6 +20,7 @@ void motionCommandFilter::init() {
     sub_husky_safety_ = nh_.subscribe("husky_safety", 1, &motionCommandFilter::huskySafetyCb, this);
     sub_sf_command_ = nh_.subscribe("sf_nearness_cmd", 1, &motionCommandFilter::sfNearnessCmdCb, this);
     sub_beacon_cmd_ = nh_.subscribe("beacon_drop_cmd", 1, &motionCommandFilter::beaconDropCb, this);
+    sub_slow_down_ = nh_.subscribe("slowdown", 1, &motionCommandFilter::slowDownCb, this);
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
@@ -51,6 +52,11 @@ void motionCommandFilter::init() {
     pnh_.param("beacon_drop_motion_settle_duration", beacon_drop_motion_settle_dur_, 2.0);
     pnh_.param("close_beacon_turn_angle", close_beacon_turn_angle_, 0.5);
 
+    pnh_.param("slow_down_percent", slow_down_percent_, 25);
+
+    slow_down_percent_ /= 100;
+    ROS_INFO("slow down percent" %f", slow_down_percent_)
+
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
     a_turnaround_ = 1;
@@ -70,6 +76,8 @@ void motionCommandFilter::init() {
     backup_turn_thresh_ = 1.5707;
     deploy_beacon_.data = true;
     beacon_estop_ = false;
+
+    enable_slow_down_ = false;
 
 }
 
@@ -105,6 +113,10 @@ void motionCommandFilter::trajMotionCmdCb(const marble_guidance::MotionCmdConstP
 
 void motionCommandFilter::followTrajCb(const std_msgs::BoolConstPtr& msg){
   enable_trajectory_following_ = msg->data;
+}
+
+void motionCommandFilter::slowDownCb(const std_msgs::BoolConstPtr& msg){
+  enable_slow_down_ = msg->data;
 }
 
 void motionCommandFilter::backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg){
@@ -566,6 +578,11 @@ void motionCommandFilter::publishCommands(){
   // } else {
   if(!estop_cmd_){
     lowpassFilterCommands(control_command_msg_);
+
+    if(enable_slow_down_){
+      control_command_msg_.linear.x *= slow_down_percent_;
+      control_command_msg_.angular.z *= slow_down_percent_;
+    }
 
     pub_cmd_vel_.publish(control_command_msg_);
   }

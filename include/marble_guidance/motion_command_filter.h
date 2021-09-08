@@ -51,6 +51,7 @@ class motionCommandFilter {
     void pathMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
+    void slowDownCb(const std_msgs::BoolConstPtr& msg);
     void backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
