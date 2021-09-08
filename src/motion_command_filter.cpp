@@ -21,12 +21,15 @@ void motionCommandFilter::init() {
     sub_sf_command_ = nh_.subscribe("sf_nearness_cmd", 1, &motionCommandFilter::sfNearnessCmdCb, this);
     sub_beacon_cmd_ = nh_.subscribe("beacon_drop_cmd", 1, &motionCommandFilter::beaconDropCb, this);
     sub_stair_mode_ = nh_.subscribe("stair_mode_cmd", 1, &motionCommandFilter::stairModeCb, this);
+    sub_stair_edges_ = nh_.subscribe("stair_edges", 1, &motionCommandFilter::stairEdgesCb, this);
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_beacon_deploy_ = nh_.advertise<std_msgs::Bool>("deploy",1);
     pub_beacon_deploy_virtual_ = nh_.advertise<std_msgs::Empty>("deploy_virtual",1);
     pub_planning_task_ = nh_.advertise<std_msgs::String>("planning_task",1);
+    pub_closest_stair_point_ = nh_.advertise<geometry_msgs::PointStamped>("closest_stair_point",1);
+    pub_closest_stair_goal_point_ = nh_.advertise<geometry_msgs::PointStamped>("closest_stair_goal_point",1);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
@@ -109,6 +112,16 @@ void motionCommandFilter::init() {
     end_stair_pause_ = false;
     stair_pause_complete_ = false;
 
+    closest_stair_point_.header.frame_id = "world";
+    closest_stair_goal_point_.header.frame_id = "world";
+    num_stairs_ = 0;
+
+    origin_point_.x = 0.0;
+    origin_point_.y = 0.0;
+    origin_point_.z = 0.0;
+
+    nearing_stairs_ = false;
+
 }
 
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
@@ -176,6 +189,28 @@ void motionCommandFilter::stairModeCb(const std_msgs::BoolConstPtr& msg){
   stair_mode_cmd_ = msg->data;
 }
 
+void motionCommandFilter::stairEdgesCb(const visualization_msgs::MarkerArrayConstPtr& msg){
+  num_stairs_ = msg->markers.size();
+  // if(!msg->markers[0].points.size()){
+  //   num_stairs_ = 0;
+  // }
+  stair_edge_points_.clear();
+  vector<geometry_msgs::Point> p;
+  geometry_msgs::Point p2;
+  // ROS_INFO("Test1");
+  if(num_stairs_ > 1){
+    for(int i = 1; i < num_stairs_; i++){
+      p.clear();
+      for(int j = 0; j < 2; j++){
+        p2 = msg->markers[i].points[j];
+        p2.z +=.75;
+        p.push_back(p2);
+      }
+      stair_edge_points_.push_back(p);
+    }
+  }
+}
+
 void motionCommandFilter::huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg){
   too_close_side_ = msg->too_close_side;
   too_close_front_ = msg->too_close_front;
@@ -225,6 +260,11 @@ void motionCommandFilter::checkConnections(){
 }
 
 void motionCommandFilter::determineMotionState(){
+
+
+  if(num_stairs_ > 1){
+    processStairEdges();
+  }
 
   // Handle stair mode seperately from everything else
   //if(!stair_mode_cmd_ && is_stair_mode_on_ && !(state_ == motionCommandFilter::STAIR_MODE_UP || state_ == motionCommandFilter::STAIR_MODE_DOWN)){
@@ -304,7 +344,11 @@ void motionCommandFilter::determineMotionState(){
             started_stairs_ = false;
 	          start_stair_z_ = current_pos_.z;
             ROS_INFO("Motion filter: Spot stair mode engaged.");
-            float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+            // geometry_msgs::Point lookahead = path_lookahead_;
+            closest_stair_goal_point_.point = stair_edge_points_[closest_stair_edge_index_][0];
+            closest_stair_goal_point_.point.z += .75;
+            pub_closest_stair_goal_point_.publish(closest_stair_goal_point_);
+            float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
             align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
             if(align_heading_error_ > stair_align_thresh_){
               ROS_INFO("DO STAIR ALIGN");
@@ -332,7 +376,11 @@ void motionCommandFilter::determineMotionState(){
 	          start_stair_z_ = current_pos_.z;
             // Path is down stairs, need to turn around first
             state_ = motionCommandFilter::STAIR_MODE_DOWN;
-            float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+            // geometry_msgs::Point lookahead = path_lookahead_;
+            closest_stair_goal_point_.point = stair_edge_points_[closest_stair_edge_index_][1];
+            closest_stair_goal_point_.point.z += .75;
+            pub_closest_stair_goal_point_.publish(closest_stair_goal_point_);
+            float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
             align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - (current_heading_ + M_PI )));
             if(align_heading_error_ > stair_turnaround_thresh_){
               do_stair_turnaround_ = true;
@@ -438,7 +486,7 @@ void motionCommandFilter::determineMotionState(){
 
       if(do_stair_align_){
         ROS_INFO_THROTTLE(1.0,"ALIGNING WITH THE STAIRS...");
-        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+        float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
         align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - current_heading_));
         //ROS_INFO_THROTTLE(.5,"error: %f", align_heading_error_);
         if(align_heading_error_ < stair_align_thresh_){
@@ -489,9 +537,10 @@ void motionCommandFilter::determineMotionState(){
       break;
 
     case motionCommandFilter::STAIR_MODE_DOWN:
+
       // Need to go down the stairs
       if(do_stair_turnaround_){
-        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+        float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
         align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - (current_heading_ + M_PI)));
 
         if(align_heading_error_ < stair_turnaround_thresh_){
@@ -509,7 +558,7 @@ void motionCommandFilter::determineMotionState(){
           }
 
           float stair_pause_time_diff_s = (ros::Time::now() - end_stair_time_).toSec();
-          if(stair_pause_time_diff_s > stair_pause_time_s_){
+          if(stair_pause_time_diff_s > stair_pause_time_s_/2.0){
             stair_pause_complete_ = true;
           }
           if(stair_pause_complete_){
@@ -674,6 +723,7 @@ void motionCommandFilter::filterCommands(){
           control_command_msg_.angular.z = 0.0;
         }
       }
+
       break;
 
     case motionCommandFilter::STAIR_MODE_DOWN:
@@ -698,6 +748,7 @@ void motionCommandFilter::filterCommands(){
           control_command_msg_.angular.z = 0.0;
         }
       }
+
       break;
 
     case motionCommandFilter::BEACON_DROP:
@@ -942,6 +993,38 @@ bool motionCommandFilter::checkStairProgress(){
     } else {
       return false;
     }
+  }
+
+}
+
+void motionCommandFilter::processStairEdges(){
+  // FIrst, find the closest stair edge point
+  float min_dist = 100.0;
+  float dist;
+  closest_stair_point_.point = origin_point_;
+  for(int i = 0; i < num_stairs_-1; i++){
+    for(int j = 0; j < 2; j++){
+      dist = dist3D(current_pos_, stair_edge_points_[i][j]);
+      if(dist < min_dist){
+        min_dist = dist;
+        closest_stair_point_.point = stair_edge_points_[i][j];
+        closest_stair_edge_index_ = i;
+        if(j){
+          closest_stair_goal_point_.point = stair_edge_points_[i][0];
+        } else {
+          closest_stair_goal_point_.point = stair_edge_points_[i][1];
+        }
+      }
+    }
+  }
+  pub_closest_stair_point_.publish(closest_stair_point_);
+  pub_closest_stair_goal_point_.publish(closest_stair_goal_point_);
+
+  if(min_dist < 2.0){
+    ROS_INFO_THROTTLE(1.0,"NEAR_STAIRS, SLOWING SPEED! dist: %f ", dist);
+    nearing_stairs_ = true;
+  } else {
+    nearing_stairs_ = false;
   }
 
 }

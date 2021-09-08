@@ -57,6 +57,7 @@ class motionCommandFilter {
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void stairModeCb(const std_msgs::BoolConstPtr& msg);
+    void stairEdgesCb(const visualization_msgs::MarkerArrayConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
     void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
     void filterCommands();
@@ -73,6 +74,7 @@ class motionCommandFilter {
     float sat(float num, float min_val, float max_val);
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
     float dist3D(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
+    void processStairEdges();
 
     enum Constants{
       STARTUP = 0,
@@ -112,6 +114,7 @@ class motionCommandFilter {
     ros::Subscriber sub_sf_command_;
     ros::Subscriber sub_beacon_cmd_;
     ros::Subscriber sub_stair_mode_;
+    ros::Subscriber sub_stair_edges_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -119,6 +122,8 @@ class motionCommandFilter {
     ros::Publisher pub_beacon_deploy_;
     ros::Publisher pub_beacon_deploy_virtual_;
     ros::Publisher pub_planning_task_;
+    ros::Publisher pub_closest_stair_point_;
+    ros::Publisher pub_closest_stair_goal_point_;
 
     ros::ServiceClient stair_mode_client_;
 
@@ -263,6 +268,16 @@ class motionCommandFilter {
     bool beacon_estop_;
 
     std_msgs::String planning_task_;
+
+    int num_stairs_;
+    vector<vector<geometry_msgs::Point>> stair_edge_points_;
+    geometry_msgs::PointStamped closest_stair_point_;
+    geometry_msgs::PointStamped closest_stair_goal_point_;
+    geometry_msgs::Point origin_point_;
+
+    int closest_stair_edge_index_;
+    bool nearing_stairs_;
+
 
 }; // class SimpleNodeClass
 

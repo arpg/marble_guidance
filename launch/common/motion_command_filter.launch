@@ -8,7 +8,7 @@
   <arg name="yaw_error_k"         default="1.0" />
 
   <arg name="is_spot"             default="true"/>
-  <arg name="offline_test"        default="false"/>
+  <arg name="offline_test"        default="true"/>
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
 
@@ -28,6 +28,8 @@
 
     <remap from="motion_command_filter/stair_mode_cmd"    to="is_near_stair"/>
     <remap from="motion_command_filter/planning_task"     to="task"/>
+
+    <remap from="motion_command_filter/stair_edges"     to="stair_edge_array"/>
 
     <param name="is_spot"                         value="$(arg is_spot)"/>
     <param name="offline_test"                    value="$(arg offline_test)"/>
