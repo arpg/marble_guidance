@@ -576,12 +576,13 @@ void motionCommandFilter::publishCommands(){
   //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
   // } else {
   if(!estop_cmd_){
-    lowpassFilterCommands(control_command_msg_);
 
     if(enable_slow_down_){
       control_command_msg_.linear.x *= slow_down_percent_;
       control_command_msg_.angular.z *= slow_down_percent_;
     }
+
+    lowpassFilterCommands(control_command_msg_);
 
     pub_cmd_vel_.publish(control_command_msg_);
   }
