@@ -52,10 +52,10 @@ void motionCommandFilter::init() {
     pnh_.param("beacon_drop_motion_settle_duration", beacon_drop_motion_settle_dur_, 2.0);
     pnh_.param("close_beacon_turn_angle", close_beacon_turn_angle_, 0.5);
 
-    pnh_.param("slow_down_percent", slow_down_percent_, 25);
+    pnh_.param("slow_down_percent", slow_down_percent_, 25.0);
 
     slow_down_percent_ /= 100;
-    ROS_INFO("slow down percent" %f", slow_down_percent_)
+    ROS_INFO("slow down percent %f", slow_down_percent_);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
