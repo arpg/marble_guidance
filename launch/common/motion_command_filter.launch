@@ -62,11 +62,16 @@
     <param name="beacon_clear_motion_duration"    value="1.0"/>
     <param name="beacon_drop_motion_settle_duration"    value="2.0"/>
 
+<<<<<<< HEAD
     <!-- Spot Stair-mode parameters -->
     <param name="stair_mode_pitch_thresh"         value=".1"/>
     <param name="stair_align_thresh"              value=".25"/>
     <param name="stair_turnaround_thresh"         value=".25"/>
     <param name="stair_mode_fwd_speed"            value=".5"/>
+=======
+    <param name="slow_down_percent"                     value="25"/>
+
+>>>>>>> feature/slow_down
 
   </node>
 

@@ -53,6 +53,7 @@ class motionCommandFilter {
     void pathMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void trajMotionCmdCb(const marble_guidance::MotionCmdConstPtr& msg);
     void followTrajCb(const std_msgs::BoolConstPtr& msg);
+    void slowDownCb(const std_msgs::BoolConstPtr& msg);
     void backupCmdCb(const marble_guidance::BackupStatusConstPtr& msg);
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
@@ -115,6 +116,7 @@ class motionCommandFilter {
     ros::Subscriber sub_beacon_cmd_;
     ros::Subscriber sub_stair_mode_;
     ros::Subscriber sub_stair_edges_;
+    ros::Subscriber sub_slow_down_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
@@ -278,6 +280,8 @@ class motionCommandFilter {
     int closest_stair_edge_index_;
     bool nearing_stairs_;
 
+    bool enable_slow_down_;
+    double slow_down_percent_;
 
 }; // class SimpleNodeClass
 
