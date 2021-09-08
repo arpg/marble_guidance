@@ -55,7 +55,6 @@ void motionCommandFilter::init() {
     pnh_.param("slow_down_percent", slow_down_percent_, 25.0);
 
     slow_down_percent_ /= 100;
-    ROS_INFO("slow down percent %f", slow_down_percent_);
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
