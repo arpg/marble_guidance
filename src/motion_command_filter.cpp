@@ -18,7 +18,7 @@ void motionCommandFilter::init() {
     sub_backup_cmd_ = nh_.subscribe("backup_status_msg", 1, &motionCommandFilter::backupCmdCb, this);
     sub_estop_cmd_ = nh_.subscribe("estop_cmd", 1, &motionCommandFilter::estopCmdCb, this);
     sub_husky_safety_ = nh_.subscribe("husky_safety", 1, &motionCommandFilter::huskySafetyCb, this);
-    sub_sf_command_ = nh_.subscribe("sf_nearness_cmd", 1, &motionCommandFilter::sfNearnessCmdCb, this);
+    sub_sf_command_ = nh_.subscribe("sf_assist_cmd", 1, &motionCommandFilter::sfAssistCmdCb, this);
     sub_beacon_cmd_ = nh_.subscribe("beacon_drop_cmd", 1, &motionCommandFilter::beaconDropCb, this);
     sub_slow_down_ = nh_.subscribe("slowdown", 1, &motionCommandFilter::slowDownCb, this);
 
@@ -63,7 +63,7 @@ void motionCommandFilter::init() {
     estop_cmd_ = true;
     enable_trajectory_following_ = false;
     enable_backup_ = false;
-    enable_sf_assist_ = false;
+    //enable_sf_assist_ = false;
 
     too_close_side_ = false;
     too_close_front_ = false;
@@ -140,7 +140,7 @@ void motionCommandFilter::huskySafetyCb(const marble_guidance::HuskySafetyConstP
   min_lidar_dist_ = msg->min_dist;
 }
 
-void motionCommandFilter::sfNearnessCmdCb(const std_msgs::Float32ConstPtr& msg){
+void motionCommandFilter::sfAssistCmdCb(const std_msgs::Float32ConstPtr& msg){
   if(!have_sf_r_cmd_) have_sf_r_cmd_ = true;
   last_sf_cmd_time_ = ros::Time::now();
   sf_r_cmd_ = msg->data;
@@ -175,9 +175,9 @@ void motionCommandFilter::checkConnections(){
   // Check for small field commands
   if((ros::Time::now() - last_sf_cmd_time_).toSec() > connection_failure_thresh_){
     have_sf_r_cmd_ = false;
-    if(enable_sf_assist_){
-      ROS_INFO_THROTTLE(2.0,"Error: Lost SF assist command...");
-    }
+    // if(enable_sf_assist_){
+    //   //ROS_INFO_THROTTLE(2.0,"Error: Lost SF assist command...");
+    // }
   }
 
 }

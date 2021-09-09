@@ -39,9 +39,10 @@ void huskySafety::init() {
 
   pnh_.param("front_safety_distance", f_dist_, 0.25);
   pnh_.param("side_safety_distance", s_dist_, 0.35);
+  pnh_.param("enable_sf_control", enable_sf_control, true);
 
   have_scan_ = false;
-  debug_ = true;
+  debug_ = false;
 
   max_sensor_dist_ = 40.0;
   min_dist_ = max_sensor_dist_;
@@ -290,9 +291,6 @@ void huskySafety::computeSFCommands(){
   // Publish sf nearness signal
   if(debug_){
 
-    std_msgs::Float32 sf_nearness_cmd_msg;
-    sf_nearness_cmd_msg.data = sf_r_cmd_;
-    pub_sf_nearness_cmd_.publish(sf_nearness_cmd_msg);
 
     std_msgs::Float32MultiArray sf_nearness_msg;
     sf_nearness_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -322,6 +320,11 @@ void huskySafety::determineSafetyState(){
     too_close_front_ = false;
     too_close_side_ = false;
   }
+
+  if(enable_sf_assist_){}
+  std_msgs::Float32 sf_nearness_cmd_msg;
+  sf_nearness_cmd_msg.data = sf_r_cmd_;
+  pub_sf_nearness_cmd_.publish(sf_nearness_cmd_msg);
 
   husky_safety_msg_.too_close_side = too_close_side_;
   husky_safety_msg_.too_close_front = too_close_front_;

@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     // Process any new lidar scans
     husky_safety_node.processLidarScan();
     if(enable_sf_control){
-      //husky_safety_node.computeSFCommands();
+      husky_safety_node.computeSFCommands();
     }
 
     // Determine the safety state

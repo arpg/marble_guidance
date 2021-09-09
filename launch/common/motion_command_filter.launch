@@ -18,6 +18,7 @@
     <remap from="motion_command_filter/backup_status_msg" to="backup_detector/backup_status_msg"/>
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
     <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
+    <remap from="motion_command_filter/sf_assist_cmd"     to="husky_safety/sf_assist_cmd"/>
     <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy_beacon"/>
     <remap from="motion_command_filter/deploy"            to="deploy"/>
     <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
@@ -44,7 +45,7 @@
     <!-- Safety params -->
     <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
     <param name="close_side_speed"                value="0.1"/>
-
+    <param name="enable_small_field_assist"       value="true"/>
     <param name="beacon_clear_motion_duration"          value="1.5"/>
     <param name="beacon_drop_motion_settle_duration"    value="2.0"/>
 
