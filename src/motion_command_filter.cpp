@@ -215,12 +215,21 @@ void motionCommandFilter::determineMotionState(){
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
         float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
-        //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
-        //ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
-        //ROS_INFO("")
-        //ROS_INFO("Relative heading error: %f", relative_heading_error);
+
         if(relative_heading_error > backup_turn_thresh_){
           state_ = motionCommandFilter::PATH_BACKUP;
+        }
+
+      }
+
+      if(too_close_front_){
+        if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
+          // Go to beacon avoid manuever
+          beacon_avoid_turn_complete_ = false;
+          beacon_avoid_complete_ = false;
+          beacon_avoid_heading_ = current_heading_;
+          last_state_ = state_;
+          state_ = motionCommandFilter::BEACON_AVOID;
         }
       }
 
@@ -249,6 +258,18 @@ void motionCommandFilter::determineMotionState(){
       if((traj_motion_type_ == a_turnaround_) && enable_backup_){
         state_ = motionCommandFilter::TRAJ_BACKUP;
       }
+
+      if(too_close_front_){
+        if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
+          // Go to beacon avoid manuever
+          beacon_avoid_turn_complete_ = false;
+          beacon_avoid_complete_ = false;
+          beacon_avoid_heading_ = current_heading_;
+          last_state_ = state_;
+          state_ = motionCommandFilter::BEACON_AVOID;
+        }
+      }
+
       break;
 
     case motionCommandFilter::PATH_BACKUP:
@@ -322,7 +343,7 @@ void motionCommandFilter::determineMotionState(){
 
     case motionCommandFilter::BEACON_AVOID:
       if(beacon_avoid_complete_){
-        state_ = PATH_FOLLOW;
+        state_ = last_state_;
       }
 
   }
@@ -394,13 +415,6 @@ void motionCommandFilter::filterCommands(){
         if(too_close_front_){
           ROS_INFO_THROTTLE(2.0,"Too close in front!");
           control_command_msg_.linear.x = 0.0;
-          if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
-            // Go to beacon avoid manuever
-            beacon_avoid_turn_complete_ = false;
-            beacon_avoid_complete_ = false;
-            beacon_avoid_heading_ = current_heading_;
-            state_ = motionCommandFilter::BEACON_AVOID;
-          }
         }
 
       }
@@ -422,13 +436,6 @@ void motionCommandFilter::filterCommands(){
         // Need to stop if we detect something in the front of the vehicle
         if(too_close_front_){
           control_command_msg_.linear.x = 0.0;
-          if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
-            // Go to beacon avoid manuever
-            beacon_avoid_turn_complete_ = false;
-            beacon_avoid_complete_ = false;
-            beacon_avoid_heading_ = current_heading_;
-            state_ = motionCommandFilter::BEACON_AVOID;
-          }
         }
       }
       if(enable_sf_assist_){
