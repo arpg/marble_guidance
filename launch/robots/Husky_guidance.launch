@@ -14,6 +14,7 @@
   <arg name="sim"                     default="false"/>
   <arg name="enable_husky_safety"     default="true"/>
   <arg name="enable_sf_assist"        default="false"/>
+  <arg name="enable_beacon_replan"    default="true"/>
 
   <!-- <arg name="path_topic"              default="scan_plan_node/path_out"/> -->
   <arg name="path_topic"              default="planned_path"/>
@@ -73,6 +74,7 @@
     <arg name="yaw_error_k"         value="$(arg yaw_error_k)" />
     <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
     <arg name="enable_sf_assist" value="$(arg enable_sf_assist)"/>
+    <arg name="enable_beacon_replan" value="$(arg enable_beacon_replan)"/>
 
   </include>
 
