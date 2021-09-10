@@ -39,14 +39,8 @@ void huskySafety::init() {
 
   pnh_.param("front_safety_distance", f_dist_, 0.25);
   pnh_.param("side_safety_distance", s_dist_, 0.35);
-<<<<<<< HEAD
-  pnh_.param("enable_sf_control", enable_sf_assist_, true);
 
-  enable_sf_assist_ = true;
-
-=======
   pnh_.param("enable_sf_control", enable_sf_control_, true);
->>>>>>> 5fd72ac0ff2d631f038c434f69f4e9d93f8462a0
 
   have_scan_ = false;
   debug_ = false;
@@ -134,7 +128,6 @@ void huskySafety::processLidarScan(){
       scan_ranges_reformat_.push_back(scan_ranges_[i]);
     }
   }
-<<<<<<< HEAD
 
   // Trim the scan down if the entire scan is not being used
   scan_ranges_final_.clear();
@@ -144,23 +137,6 @@ void huskySafety::processLidarScan(){
 
   if(debug_){
 
-=======
-
-  // Trim the scan down if the entire scan is not being used
-  scan_ranges_final_.clear();
-  for(int i = 0; i < num_scan_points_; i++){
-    scan_ranges_final_.push_back(scan_ranges_reformat_[i+scan_start_index_]);
-  }
-
-  if(debug_){
-      // std_msgs::Float32MultiArray scan_final_msg;
-      // scan_final_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-      // scan_final_msg.layout.dim[0].size = scan_ranges_final_.size();
-      // scan_final_msg.data.clear();
-      // scan_final_msg.data.insert(scan_final_msg.data.end(), scan_ranges_final_.begin(), scan_ranges_final_.end());
-      // pub_scan_final_.publish(scan_final_msg);
-
->>>>>>> 5fd72ac0ff2d631f038c434f69f4e9d93f8462a0
       //sensor_msgs::LaserScan scan_final_msg;
       scan_final_msg_.header.frame_id = vehicle_name_ + "/rplidar_safety_link";
       scan_final_msg_.ranges = scan_ranges_final_;
@@ -341,10 +317,6 @@ void huskySafety::computeSFCommands(){
 
 } // end of computeSFCommands
 
-bool huskySafety::haveScan(){
-  return have_scan_;
-}
-
 void huskySafety::determineSafetyState(){
 
   // Check the safety box to see if the RPLidar detects any close obstacles
@@ -356,11 +328,7 @@ void huskySafety::determineSafetyState(){
     too_close_side_ = false;
   }
 
-<<<<<<< HEAD
-  if(enable_sf_assist_){
-=======
   if(enable_sf_control_){
->>>>>>> 5fd72ac0ff2d631f038c434f69f4e9d93f8462a0
     std_msgs::Float32 sf_nearness_cmd_msg;
     sf_nearness_cmd_msg.data = sf_r_cmd_;
     pub_sf_nearness_cmd_.publish(sf_nearness_cmd_msg);
