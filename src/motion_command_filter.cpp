@@ -484,11 +484,16 @@ void motionCommandFilter::filterCommands(){
     case motionCommandFilter::BEACON_AVOID:
     {
       ROS_INFO_THROTTLE(2.0, "Motion filter: detected beacon, avoiding...");
-      float heading_diff = wrapAngle(current_heading_ - beacon_avoid_heading_);
-      if(!beacon_avoid_turn_complete_ || heading_diff > beacon_avoid_heading_limit_){
+      if(!beacon_avoid_turn_complete_){
         control_command_msg_.linear.x = 0.0;
         control_command_msg_.angular.z = beacon_detect_msg_.side*.05;
-        beacon_avoid_pos_ = current_pos_;
+        float heading_diff = wrapAngle(current_heading_ - beacon_avoid_heading_);
+        if(!too_close_front || (heading_diff > beacon_avoid_heading_limit_)){
+          beacon_avoid_turn_complete_ = true;
+          beacon_avoid_pos_ = current_pos_;
+        }
+      }
+      if(beacon_avoid_turn_complete_){
         if(!too_close_front_){
           control_command_msg_.linear.x = close_side_speed_;
           control_command_msg_.angular.z = 0.0;
@@ -496,6 +501,10 @@ void motionCommandFilter::filterCommands(){
           if(distance > beacon_avoid_linear_dist_){
             beacon_avoid_complete_ = true;
           }
+        } else {
+          // If we immediately go to too_close_front=true, something is wrong
+          // and we need a new path, so just go to idle for now
+          state_ = motionCommandFilter::IDLE;
         }
       }
       break;
