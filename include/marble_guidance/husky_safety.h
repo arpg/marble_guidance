@@ -145,7 +145,7 @@ class huskySafety {
     int beacon_cluster_max_thresh_;
     int side_;
     int total_close_points_;
-
+    
 
 }; // class SimpleNodeClass
 

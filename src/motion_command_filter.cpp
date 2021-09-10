@@ -87,6 +87,7 @@ void motionCommandFilter::init() {
     beacon_avoid_complete_ = false;
 
     beacon_replan_msg_.data = "careful";
+    pub_replan_ = false;
 
 }
 
@@ -247,8 +248,14 @@ void motionCommandFilter::determineMotionState(){
 
         if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
           // Go to beacon avoid manuever
-          pub_beacon_replan_.publish(beacon_replan_msg_);
+          if(!pub_replan_){
+            pub_beacon_replan_.publish(beacon_replan_msg_);
+            pub_replan_ = true;
+          }
+        } else {
+          pub_replan_ = false;
         }
+
       }
 
       // If we get a command to start following our trajectory
