@@ -239,7 +239,7 @@ class motionCommandFilter {
     bool beacon_avoid_turn_complete_;
     std_msgs::String beacon_replan_msg_;
     bool enable_beacon_replan_;
-    bool pub_replan_
+    bool pub_replan_;
 
     ros::Time last_replan_time_;
 
