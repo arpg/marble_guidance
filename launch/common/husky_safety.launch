@@ -1,6 +1,7 @@
 <launch>
 
-  <arg name="vehicle_name" default="H01"/>
+  <arg name="vehicle_name"     default="H01"/>
+  <arg name="enable_sf_assist" default="false"/>
 
   <node name="husky_safety_node" type= "husky_safety_node" pkg="marble_guidance" output="screen">
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
@@ -8,8 +9,12 @@
     <param name="loop_rate"                       value="10"/>
     <param name="front_safety_distance"           value="0.25"/>
     <param name="side_safety_distance"            value="0.4"/>
-    <param name="enable_sf_control"               value="true"/>
-    <param name="small_field_yawrate_gain"        value="0.25"/>
+
+    <param name="enable_sf_control"               value="$(arg enable_sf_assist)"/>
+    <param name="small_field_yawrate_gain"        value="0.5"/>
+    <param name="small_field_psi_gain"            value="1.0"/>
+    <param name="small_field_distance_gain"       value="1.0"/>
+
     <remap from="husky_safety/rplidar_scan"        to="scan"/>
   </node>
 

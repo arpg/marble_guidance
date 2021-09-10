@@ -23,6 +23,9 @@ int main(int argc, char** argv) {
       if(enable_sf_control){
         husky_safety_node.computeSFCommands();
       }
+
+    } else {
+      ROS_INFO_THROTTLE(1.0, "Do not have any new RPlidar scans.");
     }
 
     // Determine the safety state

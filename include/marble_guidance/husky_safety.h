@@ -80,6 +80,8 @@ class huskySafety {
     ros::Publisher pub_sf_nearness_cmd_;
     ros::Publisher pub_safety_status_;
 
+    bool enable_sf_control_;
+
     // PARAMETERS
     string vehicle_name_;
     bool debug_;
