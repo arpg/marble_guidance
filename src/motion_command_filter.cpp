@@ -488,7 +488,7 @@ void motionCommandFilter::filterCommands(){
         control_command_msg_.linear.x = 0.0;
         control_command_msg_.angular.z = beacon_detect_msg_.side*.05;
         float heading_diff = wrapAngle(current_heading_ - beacon_avoid_heading_);
-        if(!too_close_front || (heading_diff > beacon_avoid_heading_limit_)){
+        if(!too_close_front_ || (heading_diff > beacon_avoid_heading_limit_)){
           beacon_avoid_turn_complete_ = true;
           beacon_avoid_pos_ = current_pos_;
         }

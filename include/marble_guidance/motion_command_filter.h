@@ -156,6 +156,7 @@ class motionCommandFilter {
 
     // determineMotionState
     int state_;
+    int last_state_;
     int s_startup_;
     int s_estop_;
 
