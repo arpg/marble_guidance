@@ -61,8 +61,6 @@ void motionCommandFilter::init() {
     pnh_.param("enable_beacon_avoid", enable_beacon_avoid_, false);
     pnh_.param("enable_beacon_replan", enable_beacon_replan_, false);
 
-    ROS_INFO("beacon replan: %d", enable_beacon_replan_);
-
     slow_down_percent_ /= 100;
 
     state_ = motionCommandFilter::STARTUP;
