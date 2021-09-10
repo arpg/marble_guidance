@@ -89,6 +89,8 @@ void motionCommandFilter::init() {
     beacon_replan_msg_.data = "careful";
     pub_replan_ = false;
 
+    last_replan_time_ = ros::Time::now();
+
 }
 
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
@@ -247,10 +249,15 @@ void motionCommandFilter::determineMotionState(){
         }
 
         if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
+          float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
+          if(time_diff_s > 15){
+            pub_replan_ = false;
+          }
           // Go to beacon avoid manuever
           if(!pub_replan_){
             pub_beacon_replan_.publish(beacon_replan_msg_);
             pub_replan_ = true;
+            last_replan_time_ = ros::Time::now();
           }
         } else {
           pub_replan_ = false;
