@@ -54,6 +54,7 @@ class huskySafety {
     void generateProjectionShapes();
     void determineSafetyState();
     void checkSafetyBoundary(std::vector<float> scan);
+    bool haveScan();
 
     float wrapAngle(float angle);
     float sat(float num, float min_val, float max_val);
@@ -100,8 +101,6 @@ class huskySafety {
     vector<vector<float>> cos_proj_array_;
     vector<vector<float>> sin_proj_array_;
     float dg_;
-    vector<float> a_;
-    vector<float> b_;
 
     int total_fourier_terms_;
     int num_sf_fourier_terms_;
@@ -130,6 +129,12 @@ class huskySafety {
 
     float min_dist_;
     float min_lidar_dist_;
+
+    bool enable_sf_assist_;
+    float sf_r_cmd_temp_;
+    float last_sf_r_cmd_;
+    double sf_cmd_alpha_;
+
 
 }; // class SimpleNodeClass
 

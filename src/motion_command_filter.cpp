@@ -141,6 +141,7 @@ void motionCommandFilter::huskySafetyCb(const marble_guidance::HuskySafetyConstP
 }
 
 void motionCommandFilter::sfAssistCmdCb(const std_msgs::Float32ConstPtr& msg){
+  // ROS_INFO_THROTTLE(1.0, "Received SF command!");
   if(!have_sf_r_cmd_) have_sf_r_cmd_ = true;
   last_sf_cmd_time_ = ros::Time::now();
   sf_r_cmd_ = msg->data;
@@ -389,8 +390,15 @@ void motionCommandFilter::filterCommands(){
 
       }
       if(enable_sf_assist_){
+        // ROS_INFO_THROTTLE(1.0, "Adding in SF command!");
         if(have_sf_r_cmd_){
-          control_command_msg_.angular.z += sf_r_cmd_;
+          // ROS_INFO_THROTTLE(1.0, "Adding in SF command2!");
+          if(abs(sf_r_cmd_) > .25){
+            control_command_msg_.angular.z = sf_r_cmd_;
+
+          } else {
+            control_command_msg_.angular.z += sf_r_cmd_;
+          }
         }
       }
       break;

@@ -14,19 +14,19 @@ int main(int argc, char** argv) {
   nh_private.param("loop_rate", rate, 10);
   nh_private.param("enable_sf_control", enable_sf_control, false);
   ros::Rate loop_rate(rate);
-  //ros::Rate loop_rate(husky_safety_node.getLoopRate());
 
   while(ros::ok()){
 
     // Process any new lidar scans
-    husky_safety_node.processLidarScan();
-    if(enable_sf_control){
-      husky_safety_node.computeSFCommands();
+    if(husky_safety_node.haveScan()){
+      husky_safety_node.processLidarScan();
+      if(enable_sf_control){
+        husky_safety_node.computeSFCommands();
+      }
     }
 
     // Determine the safety state
     husky_safety_node.determineSafetyState();
-
 
     ros::spinOnce();
     loop_rate.sleep();
