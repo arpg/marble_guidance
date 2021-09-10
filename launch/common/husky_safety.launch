@@ -7,13 +7,16 @@
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
 
     <param name="loop_rate"                       value="10"/>
-    <param name="front_safety_distance"           value="0.25"/>
-    <param name="side_safety_distance"            value="0.4"/>
+    <param name="front_safety_distance"           value="0.275"/>
+    <param name="side_safety_distance"            value="0.425"/>
 
     <param name="enable_sf_control"               value="$(arg enable_sf_assist)"/>
     <param name="small_field_yawrate_gain"        value="0.5"/>
     <param name="small_field_psi_gain"            value="1.0"/>
     <param name="small_field_distance_gain"       value="1.0"/>
+
+    <param name="beacon_cluster_min_thresh"       value="1"/>
+    <param name="beacon_cluster_max_thresh"       value="20"/>
 
     <remap from="husky_safety/rplidar_scan"        to="scan"/>
   </node>

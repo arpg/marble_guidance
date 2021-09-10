@@ -24,6 +24,8 @@
     <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy_beacon"/>
     <remap from="motion_command_filter/deploy"            to="deploy"/>
     <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
+    <remap from="motion_command_filter/beacon_replan"     to="scan_plan/task"/>
+    <remap from="motion_command_filter/detect_beacon"     to="husky_safety/sf_beacon_detect"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>
@@ -54,6 +56,9 @@
     <param name="slow_down_percent"                     value="15"/>
 
     <param name="enable_beacon_replan"                  value="$(arg enable_beacon_replan)"/>
+    <param name="enable_beacon_avoid"                   value="false"/>
+    <param name="beacon_avoid_heading_limit"            value="1.0"/>
+    <param name="beacon_avoid_linear_dist"              value="0.5"/>
 
   </node>
 

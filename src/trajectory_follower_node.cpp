@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   ros::Rate loop_rate(rate);
 
   bool enable_ground_truth = trajectory_follower_node.getGroundTruth();
-  ROS_INFO("Enable ground truth: %d", enable_ground_truth);
+  // ROS_INFO("Enable ground truth: %d", enable_ground_truth);
   while(ros::ok()){
 
     if(trajectory_follower_node.doLookup()){

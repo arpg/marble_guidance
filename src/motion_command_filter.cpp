@@ -21,11 +21,14 @@ void motionCommandFilter::init() {
     sub_sf_command_ = nh_.subscribe("sf_assist_cmd", 1, &motionCommandFilter::sfAssistCmdCb, this);
     sub_beacon_cmd_ = nh_.subscribe("beacon_drop_cmd", 1, &motionCommandFilter::beaconDropCb, this);
     sub_slow_down_ = nh_.subscribe("slowdown", 1, &motionCommandFilter::slowDownCb, this);
+    sub_beacon_detect_ = nh_.subscribe("detect_beacon", 1, &motionCommandFilter::detectBeaconCb, this);
+
 
     // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_beacon_deploy_ = nh_.advertise<std_msgs::Bool>("deploy",1);
     pub_beacon_deploy_virtual_ = nh_.advertise<std_msgs::Empty>("deploy_virtual",1);
+    pub_beacon_replan_ = nh_.advertise<std_msgs::String>("beacon_replan",1);
 
     pnh_.param<std::string>("vehicle_name", vehicle_name_,"X1");
     pnh_.param("connection_failure_thresh", connection_failure_thresh_, 1.0);
@@ -53,6 +56,12 @@ void motionCommandFilter::init() {
     pnh_.param("close_beacon_turn_angle", close_beacon_turn_angle_, 0.5);
 
     pnh_.param("slow_down_percent", slow_down_percent_, 25.0);
+    pnh_.param("beacon_avoid_heading_limit_", beacon_avoid_linear_dist_, 1.0);
+    pnh_.param("beacon_avoid_linear_dist", beacon_avoid_linear_dist_, 0.5);
+    pnh_.param("enable_beacon_avoid", enable_beacon_avoid_, false);
+    pnh_.param("enable_beacon_replan", enable_beacon_replan_, false);
+
+    ROS_INFO("beacon replan: %d", enable_beacon_replan_);
 
     slow_down_percent_ /= 100;
 
@@ -77,6 +86,9 @@ void motionCommandFilter::init() {
     beacon_estop_ = false;
 
     enable_slow_down_ = false;
+    beacon_avoid_complete_ = false;
+
+    beacon_replan_msg_.data = "careful";
 
 }
 
@@ -132,6 +144,12 @@ void motionCommandFilter::estopCmdCb(const std_msgs::BoolConstPtr& msg){
 void motionCommandFilter::beaconDropCb(const std_msgs::BoolConstPtr& msg){
   ROS_INFO("Received beacon drop command.");
   beacon_drop_cmd_ = msg->data;
+}
+
+
+void motionCommandFilter::detectBeaconCb(const marble_guidance::BeaconDetectConstPtr& msg){
+  // ROS_INFO("Received beacon detect command.");
+  beacon_detect_msg_ = *msg;
 }
 
 void motionCommandFilter::huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg){
@@ -212,12 +230,26 @@ void motionCommandFilter::determineMotionState(){
       if((path_motion_type_ == a_turnaround_) && enable_backup_){
         float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
         float relative_heading_error = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
-        //ROS_INFO("Lookahead: (%f, %f)", path_lookahead_.x, path_lookahead_.y);
-        //ROS_INFO("Position: (%f, %f)", current_pos_.x, current_pos_.y);
-        //ROS_INFO("")
-        //ROS_INFO("Relative heading error: %f", relative_heading_error);
+
         if(relative_heading_error > backup_turn_thresh_){
           state_ = motionCommandFilter::PATH_BACKUP;
+        }
+
+      }
+
+      if(too_close_front_){
+        if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
+          // Go to beacon avoid manuever
+          beacon_avoid_turn_complete_ = false;
+          beacon_avoid_complete_ = false;
+          beacon_avoid_heading_ = current_heading_;
+          last_state_ = state_;
+          state_ = motionCommandFilter::BEACON_AVOID;
+        }
+
+        if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
+          // Go to beacon avoid manuever
+          pub_beacon_replan_.publish(beacon_replan_msg_);
         }
       }
 
@@ -246,6 +278,18 @@ void motionCommandFilter::determineMotionState(){
       if((traj_motion_type_ == a_turnaround_) && enable_backup_){
         state_ = motionCommandFilter::TRAJ_BACKUP;
       }
+
+      if(too_close_front_){
+        if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
+          // Go to beacon avoid manuever
+          beacon_avoid_turn_complete_ = false;
+          beacon_avoid_complete_ = false;
+          beacon_avoid_heading_ = current_heading_;
+          last_state_ = state_;
+          state_ = motionCommandFilter::BEACON_AVOID;
+        }
+      }
+
       break;
 
     case motionCommandFilter::PATH_BACKUP:
@@ -316,6 +360,11 @@ void motionCommandFilter::determineMotionState(){
         state_ = motionCommandFilter::IDLE;
       }
       break;
+
+    case motionCommandFilter::BEACON_AVOID:
+      if(beacon_avoid_complete_){
+        state_ = last_state_;
+      }
 
   }
 
@@ -458,6 +507,35 @@ void motionCommandFilter::filterCommands(){
         control_command_msg_.linear.x = 0.0;
       }
       break;
+
+    case motionCommandFilter::BEACON_AVOID:
+    {
+      ROS_INFO_THROTTLE(2.0, "Motion filter: detected beacon, avoiding...");
+      if(!beacon_avoid_turn_complete_){
+        control_command_msg_.linear.x = 0.0;
+        control_command_msg_.angular.z = beacon_detect_msg_.side*.05;
+        float heading_diff = wrapAngle(current_heading_ - beacon_avoid_heading_);
+        if(!too_close_front_ || (heading_diff > beacon_avoid_heading_limit_)){
+          beacon_avoid_turn_complete_ = true;
+          beacon_avoid_pos_ = current_pos_;
+        }
+      }
+      if(beacon_avoid_turn_complete_){
+        if(!too_close_front_){
+          control_command_msg_.linear.x = close_side_speed_;
+          control_command_msg_.angular.z = 0.0;
+          float distance = dist(current_pos_, beacon_avoid_pos_);
+          if(distance > beacon_avoid_linear_dist_){
+            beacon_avoid_complete_ = true;
+          }
+        } else {
+          // If we immediately go to too_close_front=true, something is wrong
+          // and we need a new path, so just go to idle for now
+          state_ = motionCommandFilter::IDLE;
+        }
+      }
+      break;
+    }
 
     case motionCommandFilter::ERROR:
       ROS_INFO_THROTTLE(2.0,"Motion filter: error");

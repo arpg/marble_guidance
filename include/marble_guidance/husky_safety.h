@@ -23,6 +23,7 @@
 #include <marble_guidance/TrajList.h>
 #include <marble_guidance/MotionCmd.h>
 #include <marble_guidance/HuskySafety.h>
+#include <marble_guidance/BeaconDetect.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -79,6 +80,7 @@ class huskySafety {
     ros::Publisher pub_sf_nearness_;
     ros::Publisher pub_sf_nearness_cmd_;
     ros::Publisher pub_safety_status_;
+    ros::Publisher pub_sf_beacon_detect_;
 
     bool enable_sf_control_;
 
@@ -136,6 +138,13 @@ class huskySafety {
     float sf_r_cmd_temp_;
     float last_sf_r_cmd_;
     double sf_cmd_alpha_;
+
+    // Beacon detect
+    marble_guidance::BeaconDetect beacon_detect_msg_;
+    int beacon_cluster_min_thresh_;
+    int beacon_cluster_max_thresh_;
+    int side_;
+    int total_close_points_;
 
 
 }; // class SimpleNodeClass

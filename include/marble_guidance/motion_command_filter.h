@@ -25,6 +25,7 @@
 #include <marble_guidance/MotionCmd.h>
 #include <marble_guidance/HuskySafety.h>
 #include <marble_guidance/BackupStatus.h>
+#include <marble_guidance/BeaconDetect.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -57,6 +58,7 @@ class motionCommandFilter {
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
     void sfAssistCmdCb(const std_msgs::Float32ConstPtr &msg);
+    void detectBeaconCb(const marble_guidance::BeaconDetectConstPtr& msg);
     void filterCommands();
     void lowpassFilterCommands(const geometry_msgs::Twist new_command);
     void publishCommands();
@@ -81,6 +83,7 @@ class motionCommandFilter {
       BEACON_MOTION = 9,
       ERROR = 10,
       IDLE = 11,
+      BEACON_AVOID = 12,
     };
 
  private:
@@ -102,12 +105,14 @@ class motionCommandFilter {
     ros::Subscriber sub_sf_command_;
     ros::Subscriber sub_beacon_cmd_;
     ros::Subscriber sub_slow_down_;
+    ros::Subscriber sub_beacon_detect_;
 
     // PUBLISHERS //
     ros::Publisher pub_cmd_vel_;
     ros::Publisher pub_cmd_vel_stamped_;
     ros::Publisher pub_beacon_deploy_;
     ros::Publisher pub_beacon_deploy_virtual_;
+    ros::Publisher pub_beacon_replan_;
 
     string vehicle_name_;
     int loop_rate_;
@@ -154,6 +159,7 @@ class motionCommandFilter {
 
     // determineMotionState
     int state_;
+    int last_state_;
     int s_startup_;
     int s_estop_;
 
@@ -221,6 +227,18 @@ class motionCommandFilter {
 
     bool enable_slow_down_;
     double slow_down_percent_;
+
+    // Beacon detect
+    marble_guidance::BeaconDetect beacon_detect_msg_;
+    geometry_msgs::Point beacon_avoid_pos_;
+    double beacon_avoid_linear_dist_;
+    bool enable_beacon_avoid_;
+    float beacon_avoid_heading_;
+    double beacon_avoid_heading_limit_;
+    bool beacon_avoid_complete_;
+    bool beacon_avoid_turn_complete_;
+    std_msgs::String beacon_replan_msg_;
+    bool enable_beacon_replan_;
 
 }; // class SimpleNodeClass
 
