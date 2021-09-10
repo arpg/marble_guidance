@@ -39,7 +39,7 @@ void huskySafety::init() {
 
   pnh_.param("front_safety_distance", f_dist_, 0.25);
   pnh_.param("side_safety_distance", s_dist_, 0.35);
-  pnh_.param("enable_sf_control", enable_sf_control, true);
+  pnh_.param("enable_sf_control", enable_sf_control_, true);
 
   have_scan_ = false;
   debug_ = false;
@@ -96,88 +96,83 @@ void huskySafety::processLidarScan(){
     have_scan_ = false;
   }
 
-  if (!have_scan_){
-    ROS_INFO_THROTTLE(1.0, "Do not have any new lidar scans.");
-    return;
-  } else {
-    // Handle infs
-    // IMPLEMENT FROM NEARNESS CONTROLLER IF NEEDED
+  // Handle infs
+  // IMPLEMENT FROM NEARNESS CONTROLLER IF NEEDED
 
-    // Reverse the scan
-    reverse(scan_ranges_.begin(), scan_ranges_.end());
+  // Reverse the scan
+  reverse(scan_ranges_.begin(), scan_ranges_.end());
 
-    // Reformat the depth scan depending on the orientation of the scanner
-    // This code handles the case where the rplidar case points in the
-    // -X direction
-    scan_ranges_reformat_.clear();
-    for (int i = total_scan_points_/2; i < total_scan_points_; i++) {
-      if(isinf(scan_ranges_[i])){
-        scan_ranges_reformat_.push_back(max_sensor_dist_);
-      } else{
-        scan_ranges_reformat_.push_back(scan_ranges_[i]);
-      }
+  // Reformat the depth scan depending on the orientation of the scanner
+  // This code handles the case where the rplidar case points in the
+  // -X direction
+  scan_ranges_reformat_.clear();
+  for (int i = total_scan_points_/2; i < total_scan_points_; i++) {
+    if(isinf(scan_ranges_[i])){
+      scan_ranges_reformat_.push_back(max_sensor_dist_);
+    } else{
+      scan_ranges_reformat_.push_back(scan_ranges_[i]);
     }
-    for (int i = 0; i < total_scan_points_/2; i++){
-      if(isinf(scan_ranges_[i])){
-        scan_ranges_reformat_.push_back(max_sensor_dist_);
-      } else{
-        scan_ranges_reformat_.push_back(scan_ranges_[i]);
-      }
+  }
+  for (int i = 0; i < total_scan_points_/2; i++){
+    if(isinf(scan_ranges_[i])){
+      scan_ranges_reformat_.push_back(max_sensor_dist_);
+    } else{
+      scan_ranges_reformat_.push_back(scan_ranges_[i]);
     }
+  }
 
-    // Trim the scan down if the entire scan is not being used
-    scan_ranges_final_.clear();
-    for(int i = 0; i < num_scan_points_; i++){
-      scan_ranges_final_.push_back(scan_ranges_reformat_[i+scan_start_index_]);
+  // Trim the scan down if the entire scan is not being used
+  scan_ranges_final_.clear();
+  for(int i = 0; i < num_scan_points_; i++){
+    scan_ranges_final_.push_back(scan_ranges_reformat_[i+scan_start_index_]);
+  }
+
+  if(debug_){
+      // std_msgs::Float32MultiArray scan_final_msg;
+      // scan_final_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+      // scan_final_msg.layout.dim[0].size = scan_ranges_final_.size();
+      // scan_final_msg.data.clear();
+      // scan_final_msg.data.insert(scan_final_msg.data.end(), scan_ranges_final_.begin(), scan_ranges_final_.end());
+      // pub_scan_final_.publish(scan_final_msg);
+
+      //sensor_msgs::LaserScan scan_final_msg;
+      scan_final_msg_.header.frame_id = vehicle_name_ + "/rplidar_safety_link";
+      scan_final_msg_.ranges = scan_ranges_final_;
+      pub_scan_final_.publish(scan_final_msg_);
+
+  }
+
+  // Convert to CVMat type for easier processing
+  // Last, convert to cvmat and saturate
+  scan_cvmat_ = cv::Mat(1,num_scan_points_, CV_32FC1);
+  std::memcpy(scan_cvmat_.data, scan_ranges_final_.data(), scan_ranges_final_.size()*sizeof(float));
+
+  float cos_proj_arr[total_fourier_terms_ + 1][num_scan_points_];
+  float sin_proj_arr[total_fourier_terms_ + 1][num_scan_points_];
+
+  cv::Mat cos_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, cos_proj_arr);
+  cv::Mat sin_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, sin_proj_arr);
+
+  for (int i = 0; i < total_fourier_terms_; i++){
+    for (int j = 0; j < num_scan_points_; j++){
+      cos_proj_arr[i][j] = cos_proj_array_[i][j];
+      sin_proj_arr[i][j] = sin_proj_array_[i][j];
     }
+  }
 
-    if(debug_){
-        // std_msgs::Float32MultiArray scan_final_msg;
-        // scan_final_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-        // scan_final_msg.layout.dim[0].size = scan_ranges_final_.size();
-        // scan_final_msg.data.clear();
-        // scan_final_msg.data.insert(scan_final_msg.data.end(), scan_ranges_final_.begin(), scan_ranges_final_.end());
-        // pub_scan_final_.publish(scan_final_msg);
+  // Extract WF Fourier coefficients from scan
+  // Compute nearness
+  nearness_ = cv::Mat::zeros(cv::Size(1, num_scan_points_), CV_32FC1);
+  nearness_ = 1.0 / scan_cvmat_;
 
-        //sensor_msgs::LaserScan scan_final_msg;
-        scan_final_msg_.header.frame_id = vehicle_name_ + "/rplidar_safety_link";
-        scan_final_msg_.ranges = scan_ranges_final_;
-        pub_scan_final_.publish(scan_final_msg_);
+  // Compute the fourier coefficients
+  nearness_a_.clear();
+  nearness_b_.clear();
+  for (int i = 0; i < total_fourier_terms_; i++){
+    nearness_a_.push_back( nearness_.dot(cos_proj_mat.row(i))*dg_/M_PI );
+    nearness_b_.push_back( nearness_.dot(sin_proj_mat.row(i))*dg_/M_PI );
+  }
 
-    }
-
-    // Convert to CVMat type for easier processing
-    // Last, convert to cvmat and saturate
-    scan_cvmat_ = cv::Mat(1,num_scan_points_, CV_32FC1);
-    std::memcpy(scan_cvmat_.data, scan_ranges_final_.data(), scan_ranges_final_.size()*sizeof(float));
-
-    float cos_proj_arr[total_fourier_terms_ + 1][num_scan_points_];
-    float sin_proj_arr[total_fourier_terms_ + 1][num_scan_points_];
-
-    cv::Mat cos_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, cos_proj_arr);
-    cv::Mat sin_proj_mat(total_fourier_terms_+1, num_scan_points_, CV_32FC1, sin_proj_arr);
-
-    for (int i = 0; i < total_fourier_terms_; i++){
-      for (int j = 0; j < num_scan_points_; j++){
-        cos_proj_arr[i][j] = cos_proj_array_[i][j];
-        sin_proj_arr[i][j] = sin_proj_array_[i][j];
-      }
-    }
-
-    // Extract WF Fourier coefficients from scan
-    // Compute nearness
-    nearness_ = cv::Mat::zeros(cv::Size(1, num_scan_points_), CV_32FC1);
-    nearness_ = 1.0 / scan_cvmat_;
-
-    // Compute the fourier coefficients
-    nearness_a_.clear();
-    nearness_b_.clear();
-    for (int i = 0; i < total_fourier_terms_; i++){
-      nearness_a_.push_back( nearness_.dot(cos_proj_mat.row(i))*dg_/M_PI );
-      nearness_b_.push_back( nearness_.dot(sin_proj_mat.row(i))*dg_/M_PI );
-    }
-
-  } // end of else statement
 
 } // end of processLidarScan
 
@@ -212,9 +207,9 @@ void huskySafety::computeSFCommands(){
   // Reconstruct the WF signal
   for(int i = 0; i < num_scan_points_; i++){
     for(int n = 0; n < num_sf_fourier_terms_; n++){
-      recon_wf_nearness[i] += a_[n+1]*cos((n+1)*gamma_vector_[i]) + b_[n+1]*sin((n+1)*gamma_vector_[i]);
+      recon_wf_nearness[i] += nearness_a_[n+1]*cos((n+1)*gamma_vector_[i]) + nearness_b_[n+1]*sin((n+1)*gamma_vector_[i]);
     }
-    recon_wf_nearness[i] += a_[0]/2.0;
+    recon_wf_nearness[i] += nearness_a_[0]/2.0;
   }
 
   // Remove the reoconstructed WF signal from the measured nearness signal
@@ -310,6 +305,10 @@ void huskySafety::computeSFCommands(){
 
 } // end of computeSFCommands
 
+bool huskySafety::haveScan(){
+  return have_scan_;
+}
+
 void huskySafety::determineSafetyState(){
 
   // Check the safety box to see if the RPLidar detects any close obstacles
@@ -321,10 +320,11 @@ void huskySafety::determineSafetyState(){
     too_close_side_ = false;
   }
 
-  if(enable_sf_assist_){}
-  std_msgs::Float32 sf_nearness_cmd_msg;
-  sf_nearness_cmd_msg.data = sf_r_cmd_;
-  pub_sf_nearness_cmd_.publish(sf_nearness_cmd_msg);
+  if(enable_sf_control_){
+    std_msgs::Float32 sf_nearness_cmd_msg;
+    sf_nearness_cmd_msg.data = sf_r_cmd_;
+    pub_sf_nearness_cmd_.publish(sf_nearness_cmd_msg);
+  }
 
   husky_safety_msg_.too_close_side = too_close_side_;
   husky_safety_msg_.too_close_front = too_close_front_;

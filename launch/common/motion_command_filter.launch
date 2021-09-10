@@ -3,9 +3,10 @@
   <arg name="vehicle_name" default="X1"/>
   <arg name="cmd_vel_topic" default="cmd_vel"/>
   <arg name="enable_husky_safety"     default="false"/>
-  <arg name="max_yawrate"         default=".75" />
-  <arg name="max_forward_speed"         default="1.0" />
-  <arg name="yaw_error_k"         default="1.0" />
+  <arg name="enable_sf_assist"        default="false"/>
+  <arg name="max_yawrate"             default=".75" />
+  <arg name="max_forward_speed"       default="1.0" />
+  <arg name="yaw_error_k"             default="1.0" />
 
   <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="log">
 
@@ -18,7 +19,7 @@
     <remap from="motion_command_filter/backup_status_msg" to="backup_detector/backup_status_msg"/>
     <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
     <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
-    <remap from="motion_command_filter/sf_assist_cmd"     to="husky_safety/sf_assist_cmd"/>
+    <remap from="motion_command_filter/sf_assist_cmd"     to="husky_safety/sf_nearness_cmd"/>
     <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy_beacon"/>
     <remap from="motion_command_filter/deploy"            to="deploy"/>
     <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
@@ -45,7 +46,7 @@
     <!-- Safety params -->
     <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
     <param name="close_side_speed"                value="0.1"/>
-    <param name="enable_small_field_assist"       value="true"/>
+    <param name="enable_small_field_assist"       value="$(arg enable_sf_assist)"/>
     <param name="beacon_clear_motion_duration"          value="1.5"/>
     <param name="beacon_drop_motion_settle_duration"    value="2.0"/>
 

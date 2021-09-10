@@ -56,7 +56,7 @@ class motionCommandFilter {
     void estopCmdCb(const std_msgs::BoolConstPtr& msg);
     void beaconDropCb(const std_msgs::BoolConstPtr& msg);
     void huskySafetyCb(const marble_guidance::HuskySafetyConstPtr& msg);
-    void sfNearnessCmdCb(const std_msgs::Float32ConstPtr &msg);
+    void sfAssistCmdCb(const std_msgs::Float32ConstPtr &msg);
     void filterCommands();
     void lowpassFilterCommands(const geometry_msgs::Twist new_command);
     void publishCommands();
