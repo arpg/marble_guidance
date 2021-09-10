@@ -52,6 +52,10 @@
 
     <param name="slow_down_percent"                     value="15"/>
 
+    <param name="enable_beacon_avoid"                   value="true"/>
+    <param name="beacon_avoid_heading_limit"            value="1.0"/>
+    <param name="beacon_avoid_linear_dist"              value="0.5"/>
+
   </node>
 
 </launch>

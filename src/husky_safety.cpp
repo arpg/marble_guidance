@@ -20,6 +20,7 @@ void huskySafety::init() {
   pub_sf_nearness_ = nh_.advertise<std_msgs::Float32MultiArray>("sf_nearness", 1);
   pub_sf_nearness_cmd_ = nh_.advertise<std_msgs::Float32>("sf_nearness_cmd", 1);
   pub_safety_status_ = nh_.advertise<marble_guidance::HuskySafety>("safety_status",1);
+  pub_sf_beacon_detect_ = nh_.advertise<std_msgs::Bool>("sf_beacon_detect",1);
   // pub_cmd_vel_stamped_ = nh_.advertise<geometry_msgs::TwistStamped>("cmd_vel_stamped", 10);
   //pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
@@ -41,6 +42,10 @@ void huskySafety::init() {
   pnh_.param("side_safety_distance", s_dist_, 0.35);
   pnh_.param("enable_sf_control", enable_sf_control_, true);
 
+  pnh_.param("beacon_cluster_min_thresh", beacon_cluster_min_thresh_, 5);
+  pnh_.param("beacon_cluster_max_thresh", beacon_cluster_min_thresh_, 20);
+
+
   have_scan_ = false;
   debug_ = false;
 
@@ -53,7 +58,7 @@ void huskySafety::init() {
 }
 
 void huskySafety::generateSafetyBoundary(){
-  ROS_INFO("Generating safety box.");
+  // ROS_INFO("Generating safety box.");
   bool safety_box_corner_switch = false;
   // Generate the left boundary
   for(int i = 0; i < num_scan_points_/2; i++){
@@ -245,6 +250,7 @@ void huskySafety::computeSFCommands(){
   std::vector<float> sf_r_cluster;
   std::vector<float> cluster_d(200, 0.0);
   std::vector<float> cluster_r(200, 0.0);
+  std::vector<int> cluster_size_vec(200,0);
   int n = 0;
   int c = 0;
   num_sf_clusters_ = 0;
@@ -264,6 +270,7 @@ void huskySafety::computeSFCommands(){
         sf_r_cluster.clear();
         cluster_d[c] /= float(n);
         cluster_r[c] /= float(n);
+        cluster_size_vec.push_back(n);
         c++;
         n = 0;
       }
@@ -272,20 +279,38 @@ void huskySafety::computeSFCommands(){
 
   // Compute the SF yawrate command from SF clusters
   num_sf_clusters_ = c;
+  ROS_INFO_THROTTLE(1.0, "num sf clusters: %d", num_sf_clusters_);
   sf_r_cmd_ = 0.0;
   int sign = 1;
   if(num_sf_clusters_ != 0){
     for(int i = 0; i < num_sf_clusters_; i++){
-      if(cluster_r[i] < 0) sign = 1;
-      if(cluster_r[i] > 0) sign = -1;
+      if(cluster_r[i] < 0){
+        sign = 1;
+        side_ = -1;
+      } else if(cluster_r[i] > 0){
+        sign = -1;
+        side_ = 1;
+      }
       sf_r_cmd_ += -sf_k_0_*float(sign)*exp(-sf_k_psi_*abs(cluster_r[i]))*exp(-sf_k_d_/abs(cluster_d[i]));
+    }
+  }
+
+  // We only have one sf obstacle, is it a beacon?
+  if(num_sf_clusters_ == 1){
+    int cluster_size = 0;
+    cluster_size = cluster_size_vec[0];
+    ROS_INFO_THROTTLE(0.5,"num cluster points: %d", cluster_size);
+    if(cluster_size <= beacon_cluster_max_thresh_ && cluster_size >= beacon_cluster_min_thresh_){
+      beacon_detect_msg_.beacon_detected = true;
+      beacon_detect_msg_.side = side_;
+    } else {
+      beacon_detect_msg_.beacon_detected = false;
     }
   }
 
 
   // Publish sf nearness signal
   if(debug_){
-
 
     std_msgs::Float32MultiArray sf_nearness_msg;
     sf_nearness_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
@@ -332,6 +357,7 @@ void huskySafety::determineSafetyState(){
 
   pub_safety_status_.publish(husky_safety_msg_);
 
+  pub_sf_beacon_detect_.publish(beacon_detect_msg_);
 }
 
 void huskySafety::checkSafetyBoundary(std::vector<float> scan){

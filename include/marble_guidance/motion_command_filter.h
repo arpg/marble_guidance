@@ -25,6 +25,7 @@
 #include <marble_guidance/MotionCmd.h>
 #include <marble_guidance/HuskySafety.h>
 #include <marble_guidance/BackupStatus.h>
+#include <marble_guidance/BeaconDetect.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -81,6 +82,7 @@ class motionCommandFilter {
       BEACON_MOTION = 9,
       ERROR = 10,
       IDLE = 11,
+      BEACON_AVOID = 12,
     };
 
  private:
@@ -221,6 +223,16 @@ class motionCommandFilter {
 
     bool enable_slow_down_;
     double slow_down_percent_;
+
+    // Beacon detect
+    marble_guidance::BeaconDetect beacon_detect_msg_;
+    geometry_msgs::Point beacon_avoid_pos_;
+    double beacon_avoid_linear_dist_;
+    bool enable_beacon_avoid_;
+    float beacon_avoid_heading_;
+    double beacon_avoid_heading_limit_;
+    bool beacon_avoid_complete_;
+    bool beacon_avoid_turn_complete_;
 
 }; // class SimpleNodeClass
 

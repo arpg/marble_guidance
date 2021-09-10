@@ -15,6 +15,9 @@
     <param name="small_field_psi_gain"            value="1.0"/>
     <param name="small_field_distance_gain"       value="1.0"/>
 
+    <param name="beacon_cluster_min_thresh"       value="5"/>
+    <param name="beacon_cluster_max_thresh"       value="20"/>
+
     <remap from="husky_safety/rplidar_scan"        to="scan"/>
   </node>
 
