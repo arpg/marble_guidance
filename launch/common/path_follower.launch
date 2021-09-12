@@ -15,8 +15,6 @@
 
     <remap from="path_follower/odometry"        to="odometry"/>
     <remap from="path_follower/path"            to="$(arg path_topic)"/>
-    <!--<remap from="path_follower/path"            to="path_stitched"/> -->
-    <remap from="path_follower/enable_backup"   to="enable_backup"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
     <param name="loop_rate"                       value="20.0"/>

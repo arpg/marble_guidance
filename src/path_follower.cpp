@@ -12,7 +12,6 @@ void pathFollower::init() {
 
     sub_path_ = nh_.subscribe("path", 1, &pathFollower::pathCb, this);
     sub_odom_ = nh_.subscribe("odometry", 1, &pathFollower::odomCb, this);
-    sub_backup_ = nh_.subscribe("enable_backup", 1, &pathFollower::backupCb, this);
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     pub_lookahead_point_ = nh_.advertise<geometry_msgs::PointStamped>("lookahead_point", 10);
     pub_motion_cmd_ = nh_.advertise<marble_guidance::MotionCmd>("motion_cmd", 10);
@@ -40,7 +39,6 @@ void pathFollower::init() {
 		//lookahead_dist_thresh_ = 1.25;
     have_path_ = false;
     have_odom_ = false;
-    enable_backup_ = false;
     empty_path_ = false;
     new_path_ = false;
     if (sim_start_) have_path_ = true;
@@ -277,10 +275,6 @@ void pathFollower::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
 
   //ROS_INFO_THROTTLE(1, "Current Odom - X: %f, Y: %f, Z, %f, Heading: %f", current_pos_.x, current_pos_.y, current_pos_.z, current_heading_);
 
-}
-
-void pathFollower::backupCb(const std_msgs::Bool bool_msg){
-  enable_backup_ = bool_msg.data;
 }
 
 bool pathFollower::ready(){
