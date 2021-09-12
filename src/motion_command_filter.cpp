@@ -76,6 +76,7 @@ void motionCommandFilter::init() {
     pnh_.param("slow_down_percent", slow_down_percent_, 25.0);
 
     slow_down_percent_ /= 100;
+    stair_mode_cmd2_ = false;
 
     state_ = motionCommandFilter::STARTUP;
     a_fwd_motion_ = 0;
@@ -278,7 +279,7 @@ void motionCommandFilter::determineMotionState(){
 
   // Handle stair mode seperately from everything else
   //if(!stair_mode_cmd_ && is_stair_mode_on_ && !(state_ == motionCommandFilter::STAIR_MODE_UP || state_ == motionCommandFilter::STAIR_MODE_DOWN)){
-  if(!stair_mode_cmd_ && is_stair_mode_on_ && !checkStairProgress()){
+  if(!(stair_mode_cmd_ || stair_mode_cmd2_) && is_stair_mode_on_ && !checkStairProgress()){
     stair_mode_srv_.request.data = false;
     if(stair_mode_client_.call(stair_mode_srv_) || offline_test_){
     //if(true){
@@ -337,7 +338,7 @@ void motionCommandFilter::determineMotionState(){
         }
       }
 
-      if(is_spot_ && stair_mode_cmd_){
+      if(is_spot_ && (stair_mode_cmd_ || stair_mode_cmd2_)){
         //ROS_INFO("ENTERING STAIR MODE...");
         // if the path is upstairs, switch to stair mode and start following
         //if(isUpstairs(path_goal_poin_)){
@@ -356,7 +357,7 @@ void motionCommandFilter::determineMotionState(){
             ROS_INFO("Motion filter: Spot stair mode engaged.");
             // geometry_msgs::Point lookahead = path_lookahead_;
             closest_stair_goal_point_.point = stair_edge_points_[closest_stair_edge_index_][0];
-            closest_stair_goal_point_.point.z += .75;
+            //closest_stair_goal_point_.point.z += .75;
             pub_closest_stair_goal_point_.publish(closest_stair_goal_point_);
             float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
             align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - current_heading_ ));
@@ -388,7 +389,7 @@ void motionCommandFilter::determineMotionState(){
             state_ = motionCommandFilter::STAIR_MODE_DOWN;
             // geometry_msgs::Point lookahead = path_lookahead_;
             closest_stair_goal_point_.point = stair_edge_points_[closest_stair_edge_index_][1];
-            closest_stair_goal_point_.point.z += .75;
+            // closest_stair_goal_point_.point.z += .75;
             pub_closest_stair_goal_point_.publish(closest_stair_goal_point_);
             float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
             align_heading_error_ = abs(wrapAngle(relative_lookahead_heading - (current_heading_ + M_PI )));
@@ -559,7 +560,7 @@ void motionCommandFilter::determineMotionState(){
       } else {
 
         if(checkStairProgress()){
-          ROS_INFO("BOTTOM OF STAIRS REACHED");
+          ROS_INFO_THROTTLE(1.0,"BOTTOM OF STAIRS REACHED");
 
           // We need to pause for a little bit so we don't go right back down the stairs
           if(!end_stair_pause_){
@@ -642,6 +643,7 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::PATH_FOLLOW:
+    {
       ROS_INFO_THROTTLE(2.0,"Motion filter: path follow");
       control_command_msg_ = path_cmd_vel_;
       if(enable_husky_safety_){
@@ -667,6 +669,13 @@ void motionCommandFilter::filterCommands(){
           control_command_msg_.angular.z += sf_r_cmd_;
         }
       }
+
+      float z_diff = abs(stair_lookahead_.z - (current_pos_.z + planning_link_z_offset_));
+      if( z_diff >= .5){
+        ROS_INFO_THROTTLE(1.0, "Nearing stairs, SLOWING DOWN! z_diff: %f", z_diff);
+        control_command_msg_.linear.x *= .5;
+      }
+    }
       break;
 
     case motionCommandFilter::TRAJ_FOLLOW:
@@ -719,6 +728,8 @@ void motionCommandFilter::filterCommands(){
         align_heading_error_ = wrapAngle(relative_lookahead_heading - current_heading_ );
 
         float yawrate_cmd = sat(yawrate_k0_*align_heading_error_, -yawrate_max_/2.0, yawrate_max_/2.0);
+
+        // float min_yawrate = 0.05;
 
         control_command_msg_.linear.x = 0.0;
         control_command_msg_.angular.z = yawrate_cmd;
@@ -915,9 +926,11 @@ void motionCommandFilter::publishCommands(){
   //   control_command_msg_stamped_.twist = control_command_msg_;
   //   pub_cmd_vel_stamped_.publish(control_command_msg_stamped_);
   // } else {
+
+
   if(!estop_cmd_){
 
-    if(enable_slow_down_ || nearing_stairs_ && (is_spot_ && !(do_stair_align_ || do_stair_turnaround_)) ){
+    if(enable_slow_down_ && (is_spot_ && !(do_stair_align_ || do_stair_turnaround_)) ){
       control_command_msg_.linear.x *= slow_down_percent_;
       control_command_msg_.angular.z *= slow_down_percent_;
     }
@@ -1036,11 +1049,11 @@ void motionCommandFilter::processStairEdges(){
   pub_closest_stair_point_.publish(closest_stair_point_);
   pub_closest_stair_goal_point_.publish(closest_stair_goal_point_);
 
-  if(min_dist < 2.0){
-    ROS_INFO_THROTTLE(1.0,"NEAR_STAIRS, SLOWING SPEED! dist: %f ", dist);
-    nearing_stairs_ = true;
+  if(min_dist < 1.0){
+    // ROS_INFO_THROTTLE(1.0,"Enteri", dist);
+    stair_mode_cmd2_ = true;
   } else {
-    nearing_stairs_ = false;
+    stair_mode_cmd2_ = false;
   }
 
 }

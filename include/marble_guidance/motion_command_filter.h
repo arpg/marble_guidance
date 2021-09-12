@@ -282,6 +282,7 @@ class motionCommandFilter {
 
     bool enable_slow_down_;
     double slow_down_percent_;
+    bool stair_mode_cmd2_;
 
 }; // class SimpleNodeClass
 
