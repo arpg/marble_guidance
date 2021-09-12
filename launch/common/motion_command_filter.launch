@@ -54,6 +54,7 @@
     <param name="yaw_rate_lp_filter_const_up"      value=".25"/>
     <param name="yaw_rate_lp_filter_const_down"    value=".25"/>
     <param name="max_forward_speed"                value="$(arg max_forward_speed)"/>
+    <param name="spot_min_turn_rate"                    value="0.1"/>
 
     <!-- Safety params -->
     <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>

@@ -45,6 +45,7 @@ void motionCommandFilter::init() {
     pnh_.param("max_forward_speed", u_fwd_cmd_max_, 0.5);
     pnh_.param("max_backward_speed", u_back_cmd_max_, 0.5);
     pnh_.param("yaw_error_k", yaw_error_k_ , 1.0);
+    pnh_.param("spot_min_turn_rate", spot_min_turn_rate_ , 0.1);
 
     pnh_.param("fwd_speed_lp_filter_const_up", u_cmd_lp_filt_const_up_, .75);
     pnh_.param("fwd_speed_lp_filter_const_down", u_cmd_lp_filt_const_up_, .95);
@@ -729,10 +730,14 @@ void motionCommandFilter::filterCommands(){
 
         float yawrate_cmd = sat(yawrate_k0_*align_heading_error_, -yawrate_max_/2.0, yawrate_max_/2.0);
 
-        // float min_yawrate = 0.05;
-
         control_command_msg_.linear.x = 0.0;
-        control_command_msg_.angular.z = yawrate_cmd;
+
+        if(abs(yawrate_cmd) < spot_min_turn_rate_){
+          control_command_msg_.angular.z = sgn(yawrate_cmd)*spot_min_turn_rate_;
+        } else {
+          control_command_msg_.angular.z = yawrate_cmd;
+        }
+
       } else {
         ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode up");
 
@@ -757,7 +762,13 @@ void motionCommandFilter::filterCommands(){
         float yawrate_cmd = sat(yawrate_k0_*align_heading_error_, -yawrate_max_/2.0, yawrate_max_/2.0);
 
         control_command_msg_.linear.x = 0.0;
-        control_command_msg_.angular.z = yawrate_cmd;
+
+        if(abs(yawrate_cmd) < spot_min_turn_rate_){
+          control_command_msg_.angular.z = sgn(yawrate_cmd)*spot_min_turn_rate_;
+        } else {
+          control_command_msg_.angular.z = yawrate_cmd;
+        }
+
       } else {
         ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode down");
 
@@ -988,7 +999,7 @@ void motionCommandFilter::lowpassFilterCommands(const geometry_msgs::Twist new_c
 bool motionCommandFilter::isUpstairs(const geometry_msgs::Point lookahead_point){
   float val1 = current_pos_.z + planning_link_z_offset_;
   float z_diff = lookahead_point.z - val1;
-  ROS_INFO_THROTTLE(1.0,"z_diff: %f", z_diff);
+  //ROS_INFO_THROTTLE(1.0,"z_diff: %f", z_diff);
   //ROS_INFO("z_diff: %f", z_diff);
   if(z_diff > stair_goal_point_offset_){
     return true;
@@ -1091,6 +1102,14 @@ float motionCommandFilter::sat(float num, float min_val, float max_val){
     } else {
       return num;
     }
+}
+
+float motionCommandFilter::sgn(float num){
+  if(num < 0){
+    return -1.0;
+  } else {
+    return 1.0;
+  }
 }
 
  // end of class

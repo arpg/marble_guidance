@@ -76,6 +76,7 @@ class motionCommandFilter {
     float dist(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
     float dist3D(const geometry_msgs::Point p1, const geometry_msgs::Point p2);
     void processStairEdges();
+    float sgn(float num);
 
     enum Constants{
       STARTUP = 0,
@@ -283,6 +284,7 @@ class motionCommandFilter {
     bool enable_slow_down_;
     double slow_down_percent_;
     bool stair_mode_cmd2_;
+    double spot_min_turn_rate_;
 
 }; // class SimpleNodeClass
 
