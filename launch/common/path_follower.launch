@@ -33,7 +33,7 @@
     <param name="end_turn_in_place_thresh"        value="0.25"/>
     <param name="turn_in_place_yawrate"           value="0.4"/>
     <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
-    <param name="lookahead_distance_stairs_threshold"    value="3.0"/>
+    <param name="lookahead_distance_stairs_threshold"    value="2.0"/>
     <param name="enable_speed_regulation"         value="true"/>
     <param name="stopping_distance"               value="0.25"/>
     <param name="slow_down_distance"              value="0.65"/>
