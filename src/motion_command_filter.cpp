@@ -239,18 +239,18 @@ void motionCommandFilter::determineMotionState(){
       }
 
       if(too_close_front_){
-        if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
-          // Go to beacon avoid manuever
-          beacon_avoid_turn_complete_ = false;
-          beacon_avoid_complete_ = false;
-          beacon_avoid_heading_ = current_heading_;
-          last_state_ = state_;
-          state_ = motionCommandFilter::BEACON_AVOID;
-        }
+        // if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
+        //   // Go to beacon avoid manuever
+        //   beacon_avoid_turn_complete_ = false;
+        //   beacon_avoid_complete_ = false;
+        //   beacon_avoid_heading_ = current_heading_;
+        //   last_state_ = state_;
+        //   state_ = motionCommandFilter::BEACON_AVOID;
+        // }
 
         if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
           float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
-          if(time_diff_s > 15){
+          if(time_diff_s > 5){
             pub_replan_ = false;
           }
           // Go to beacon avoid manuever
