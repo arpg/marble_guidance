@@ -248,23 +248,41 @@ void motionCommandFilter::determineMotionState(){
           state_ = motionCommandFilter::BEACON_AVOID;
         }
 
-        if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
-          float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
-          if(time_diff_s > 15){
+		if(!started_vehicle_stop_){
+		  started_vehicle_stop_ = true;
+		  vehicle_stop_time_ = ros::Time::now();
+		}
+		
+        float time_diff_s = (ros::Time::now() - vehicle_stop_time_).toSec();
+		if(time_diff_s > 5.0){
+          if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
+           // float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
+            //if(time_diff_s > 15){
+          //    pub_replan_ = false;
+          //}
+          // Go to beacon avoid manuever
+            
+            pub_beacon_replan_.publish(beacon_replan_msg_);
+            vehicle_stop_time_ = ros::Time::now();
+          }
+        }
+      } else {
+        started_vehicle_stop_ = false;
+      }
+
+/*
+          if(!pub_replan_){
+              pub_beacon_replan_.publish(beacon_replan_msg_);
+              pub_replan_ = true;
+              last_replan_time_ = ros::Time::now();
+            }
+          } else {
             pub_replan_ = false;
           }
-          // Go to beacon avoid manuever
-          if(!pub_replan_){
-            pub_beacon_replan_.publish(beacon_replan_msg_);
-            pub_replan_ = true;
-            last_replan_time_ = ros::Time::now();
-          }
-        } else {
-          pub_replan_ = false;
         }
 
       }
-
+*/
       // If we get a command to start following our trajectory
       // and we have a trajectory following commands
       if(enable_trajectory_following_ && have_traj_motion_cmd_){
@@ -292,15 +310,24 @@ void motionCommandFilter::determineMotionState(){
       }
 
       if(too_close_front_){
-        if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
-          // Go to beacon avoid manuever
-          beacon_avoid_turn_complete_ = false;
-          beacon_avoid_complete_ = false;
-          beacon_avoid_heading_ = current_heading_;
-          last_state_ = state_;
-          state_ = motionCommandFilter::BEACON_AVOID;
-        }
-      }
+		if(!started_vehicle_stop_){
+		  started_vehicle_stop_ = true;
+		  vehicle_stop_time_ = ros::Time::now();
+		}
+		float time_diff_s = (ros::Time::now() - vehicle_stop_time_).toSec();
+		if(time_diff_s > 5.0){
+          if(beacon_detect_msg_.beacon_detected && enable_beacon_avoid_){
+            // Go to beacon avoid manuever
+            beacon_avoid_turn_complete_ = false;
+            beacon_avoid_complete_ = false;
+            beacon_avoid_heading_ = current_heading_;
+            last_state_ = state_;
+            state_ = motionCommandFilter::BEACON_AVOID;
+          }
+		}
+      } else {
+		  started_vehicle_stop_ = false;
+	  }
 
       break;
 

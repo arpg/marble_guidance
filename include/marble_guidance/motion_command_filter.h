@@ -243,6 +243,9 @@ class motionCommandFilter {
 
     ros::Time last_replan_time_;
 
+    ros::Time vehicle_stop_time_;
+    bool started_vehicle_stop_;
+   
 }; // class SimpleNodeClass
 
 }  // namespace demo

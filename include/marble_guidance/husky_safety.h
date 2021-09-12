@@ -145,7 +145,9 @@ class huskySafety {
     int beacon_cluster_max_thresh_;
     int side_;
     int total_close_points_;
-    
+
+	bool started_vehicle_stop_;
+    ros::Time vehicle_stop_time_;    
 
 }; // class SimpleNodeClass
 
