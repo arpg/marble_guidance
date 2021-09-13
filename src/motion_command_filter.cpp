@@ -249,15 +249,16 @@ void motionCommandFilter::determineMotionState(){
         // }
 
         if(beacon_detect_msg_.beacon_detected && enable_beacon_replan_){
-          float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
 
           // Go to beacon avoid manuever
           if(!pub_replan_){
             pub_replan_ = true;
             last_replan_time_ = ros::Time::now();
           }
+          
+          float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
 
-          if(time_diff_s > 5){
+          if(time_diff_s > 5.0){
             pub_replan_ = false;
             pub_beacon_replan_.publish(beacon_replan_msg_);
 
