@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="vehicle_name"            default="D02"/>
+  <arg name="vehicle_name"            default="D01"/>
   <arg name="enable_ground_truth"     default="false"/>
 
   <arg name="max_yawrate"             default="0.5"/>

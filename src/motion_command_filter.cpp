@@ -728,7 +728,7 @@ void motionCommandFilter::filterCommands(){
       if(do_stair_align_){
         ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode up, aligning...");
 
-        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+        float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
         align_heading_error_ = wrapAngle(relative_lookahead_heading - current_heading_ );
 
         float yawrate_cmd = sat(yawrate_k0_*align_heading_error_, -yawrate_max_/2.0, yawrate_max_/2.0);
@@ -759,7 +759,7 @@ void motionCommandFilter::filterCommands(){
       if(do_stair_turnaround_){
         ROS_INFO_THROTTLE(5.0, "Motion filter: stair mode down, aligning...");
 
-        float relative_lookahead_heading = atan2((path_lookahead_.y - current_pos_.y), (path_lookahead_.x - current_pos_.x));
+        float relative_lookahead_heading = atan2((closest_stair_goal_point_.point.y - current_pos_.y), (closest_stair_goal_point_.point.x - current_pos_.x));
         align_heading_error_ = wrapAngle(relative_lookahead_heading - (current_heading_ + M_PI));
 
         float yawrate_cmd = sat(yawrate_k0_*align_heading_error_, -yawrate_max_/2.0, yawrate_max_/2.0);
