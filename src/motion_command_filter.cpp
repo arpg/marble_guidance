@@ -130,6 +130,9 @@ void motionCommandFilter::init() {
     nearing_stairs_ = false;
     enable_slow_down_ = false;
 
+    do_stair_align_ = false;
+    do_stair_turnaround_ = false;
+
 }
 
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
