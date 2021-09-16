@@ -30,6 +30,7 @@
     <remap from="motion_command_filter/planning_task"     to="task"/>
 
     <remap from="motion_command_filter/stair_edges"     to="stair_edge_array"/>
+    <remap from="motion_command_filter/slowdown"        to="motion_command_filter/slowdown_fake"/>
 
     <param name="is_spot"                         value="$(arg is_spot)"/>
     <param name="offline_test"                    value="$(arg offline_test)"/>
