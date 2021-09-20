@@ -98,6 +98,11 @@ void motionCommandFilter::init() {
     zero_point_.y = 0.0;
     zero_point_.z = 0.0;
 
+    beacon_shake_complete_ = false;
+    started_beacon_shake_motion_ = false;
+    started_beacon_shake_stop_ = false;
+    beacon_shake_stop_complete_ = false;
+
 }
 
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
@@ -361,6 +366,9 @@ void motionCommandFilter::determineMotionState(){
       if(beacon_drop_complete_){
         state_ = motionCommandFilter::BEACON_MOTION;
         started_beacon_clear_motion_ = false;
+        started_beacon_shake_motion_ = false;
+        started_beacon_shake_stop_ = false;
+        beacon_shake_complete_ = false;
       }
 
       // if(!beacon_drop_cmd_){
@@ -372,13 +380,20 @@ void motionCommandFilter::determineMotionState(){
     case motionCommandFilter::BEACON_MOTION:
       // If we are in the beacon motion state, move forward until the beacon is cleared.
 
+      // NEW CODE FOR COMPETITION
+      // We need to shake the beacon out.
+      if(!started_beacon_shake_motion_){
+        beacon_shake_motion_time_ = ros::Time::now();
+        started_beacon_shake_motion_ = true;
+      }
+
       // Do a check to see how long we have been in this state
-      if(!started_beacon_clear_motion_){
+      if(!started_beacon_clear_motion_ && beacon_shake_complete_){
         beacon_clear_start_time_ = ros::Time::now();
         started_beacon_clear_motion_ = true;
       }
 
-      if((ros::Time::now() - beacon_clear_start_time_).toSec() > beacon_clear_motion_duration_){
+      if(beacon_shake_complete_ && (ros::Time::now() - beacon_clear_start_time_).toSec() > beacon_clear_motion_duration_){
         // End of beacon drop dance, go back to Idle.
         state_ = motionCommandFilter::IDLE;
       }
@@ -403,7 +418,7 @@ void motionCommandFilter::determineMotionState(){
 
   if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
     float distance = dist(current_pos_, zero_point_);
-    if(distance > 5.0 || drop_beacons_){
+    if(distance > 2.0 || drop_beacons_){
       drop_beacons_ = true;
       state_ = motionCommandFilter::BEACON_DROP;
       beacon_drop_start_time_ = ros::Time::now();
@@ -526,9 +541,30 @@ void motionCommandFilter::filterCommands(){
       break;
 
     case motionCommandFilter::BEACON_MOTION:
-      ROS_INFO_THROTTLE(2.0, "Motion filter: clearing dropped beacon");
-      control_command_msg_.linear.x = 0.2;
-      control_command_msg_.angular.z = 0.0;
+      if(!beacon_shake_complete_){
+        ROS_INFO("Motion filter: SHAKE_ROUTINE");
+        control_command_msg_.linear.x = 0.5;
+        control_command_msg_.angular.z = 0.0;
+        float dur = (ros::Time::now() - beacon_shake_motion_time_).toSec();
+        if(dur >= .25){
+          control_command_msg_.linear.x = 0.0;
+          control_command_msg_.angular.z = 0.0;
+		    if(!beacon_shake_stop_complete_){
+			   beacon_shake_stop_time_ = ros::Time::now();
+			   beacon_shake_stop_complete_ = true;
+            }
+		    float dur2 = (ros::Time::now() - beacon_shake_stop_time_).toSec();
+		    if(dur2 > 1.0){
+              beacon_shake_complete_ = true;
+		    }
+          pub_cmd_vel_.publish(control_command_msg_);
+        } else {
+          ROS_INFO_THROTTLE(2.0, "Motion filter: clearing dropped beacon");
+          control_command_msg_.linear.x = 0.2;
+          control_command_msg_.angular.z = 0.0;
+        }
+      }
+
       // Need to stop if we detect something in the front of the vehicle
       if(too_close_front_){
         ROS_INFO_THROTTLE(2.0,"Too close in front!");
@@ -655,7 +691,7 @@ void motionCommandFilter::computeBeaconDropMotionCmds(){
     }
 
     float heading_error = wrapAngle(goal_heading_ - current_heading_);
-    if(abs(heading_error) >= .1){
+    if(abs(heading_error) >= 0.2){
       control_command_msg_.linear.x = 0.0;
       control_command_msg_.angular.z = sat(yawrate_k0_*heading_error, -yawrate_max_, yawrate_max_);
     } else {
@@ -697,7 +733,12 @@ void motionCommandFilter::publishCommands(){
       control_command_msg_.angular.z *= slow_down_percent_;
     }
 
-    lowpassFilterCommands(control_command_msg_);
+//    if(!(state_ == motionCommandFilter::BEACON_MOTION)){
+      lowpassFilterCommands(control_command_msg_);
+ //   } else {
+  //    last_forward_speed_ = 0.0;
+  //    last_yaw_rate_ = 0.0;
+   // }
 
     pub_cmd_vel_.publish(control_command_msg_);
   }
