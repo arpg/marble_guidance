@@ -242,6 +242,9 @@ class motionCommandFilter {
     bool pub_replan_;
 
     ros::Time last_replan_time_;
+    geometry_msgs::Point zero_point_;
+
+    bool drop_beacons_;
 
 }; // class SimpleNodeClass
 

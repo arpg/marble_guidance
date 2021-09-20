@@ -91,6 +91,13 @@ void motionCommandFilter::init() {
 
     last_replan_time_ = ros::Time::now();
 
+    beacon_drop_cmd_ = false;
+    drop_beacons_ = false;
+
+    zero_point_.x = 0.0;
+    zero_point_.y = 0.0;
+    zero_point_.z = 0.0;
+
 }
 
 void motionCommandFilter::odomCb(const nav_msgs::OdometryConstPtr& odom_msg){
@@ -255,7 +262,7 @@ void motionCommandFilter::determineMotionState(){
             pub_replan_ = true;
             last_replan_time_ = ros::Time::now();
           }
-          
+
           float time_diff_s = (ros::Time::now() - last_replan_time_).toSec();
 
           if(time_diff_s > 5.0){
@@ -395,19 +402,24 @@ void motionCommandFilter::determineMotionState(){
   }
 
   if(beacon_drop_cmd_ && !(state_ == motionCommandFilter::BEACON_DROP || state_ == motionCommandFilter::BEACON_MOTION)){
-    state_ = motionCommandFilter::BEACON_DROP;
-    beacon_drop_start_time_ = ros::Time::now();
-    beacon_drop_complete_ = false;
-    beacon_drop_cmd_ = false;
-    start_beacon_drop_turn_ = false;
-    have_initial_settle_time_ = false;
-    have_target_heading_ = false;
-    dropped_beacon_ = false;
-    control_command_msg_.linear.x = 0.0;
-    control_command_msg_.angular.z = 0.0;
-    pub_cmd_vel_.publish(control_command_msg_);
+    float distance = dist(current_pos_, zero_point_);
+    if(distance > 5.0 || drop_beacons_){
+      drop_beacons_ = true;
+      state_ = motionCommandFilter::BEACON_DROP;
+      beacon_drop_start_time_ = ros::Time::now();
+      beacon_drop_complete_ = false;
+      beacon_drop_cmd_ = false;
+      start_beacon_drop_turn_ = false;
+      have_initial_settle_time_ = false;
+      have_target_heading_ = false;
+      dropped_beacon_ = false;
+      control_command_msg_.linear.x = 0.0;
+      control_command_msg_.angular.z = 0.0;
+      pub_cmd_vel_.publish(control_command_msg_);
+    } else {
+      beacon_drop_cmd_ = false;
+    }
   }
-
 }
 
 void motionCommandFilter::filterCommands(){
