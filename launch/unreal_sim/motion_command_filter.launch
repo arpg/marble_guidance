@@ -1,0 +1,67 @@
+<launch>
+
+  <arg name="vehicle_name" default="X1"/>
+  <arg name="cmd_vel_topic" default="cmd_vel"/>
+  <arg name="odom_topic" default="/unreal/odom"/>
+  <arg name="enable_husky_safety"     default="false"/>
+  <arg name="enable_sf_assist"        default="false"/>
+  <arg name="max_yawrate"             default=".75" />
+  <arg name="max_forward_speed"       default="1.0" />
+  <arg name="yaw_error_k"             default="1.0" />
+  <arg name="enable_beacon_replan"    default="false"/>
+
+  <node name="motion_command_filter" type= "motion_command_filter_node" pkg="marble_guidance" output="screen">
+
+    <remap from="motion_command_filter/odometry"      to="$(arg odom_topic)"/>
+    <remap from="motion_command_filter/path_motion_cmd"   to="path_follower/motion_cmd"/>
+    <remap from="motion_command_filter/traj_motion_cmd"   to="trajectory_follower/motion_cmd"/>
+    <remap from="motion_command_filter/cmd_vel"           to="$(arg cmd_vel_topic)"/>
+    <remap from="motion_command_filter/estop_cmd"         to="estop"/>
+    <!-- <remap from="motion_command_filter/cmd_vel_stamped"   to="cmd_vel"/> -->
+    <remap from="motion_command_filter/backup_status_msg" to="backup_detector/backup_status_msg"/>
+    <remap from="motion_command_filter/follow_traj"       to="follow_traj"/>
+    <remap from="motion_command_filter/husky_safety"      to="husky_safety/safety_status"/>
+    <remap from="motion_command_filter/sf_assist_cmd"     to="husky_safety/sf_nearness_cmd"/>
+    <remap from="motion_command_filter/beacon_drop_cmd"   to="deploy_beacon"/>
+    <remap from="motion_command_filter/deploy"            to="deploy"/>
+    <remap from="motion_command_filter/deploy_virtual"    to="breadcrumb/deploy"/>
+    <remap from="motion_command_filter/beacon_replan"     to="task"/>
+    <remap from="motion_command_filter/detect_beacon"     to="husky_safety/sf_beacon_detect"/>
+    <remap from="motion_command_filter/slowdown"          to="motion_command_filter/slowdown_fake"/>
+
+    <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
+    <param name="loop_rate"                       value="20.0"/>
+    <param name="connection_failure_thresh"       value="1.0"/>
+
+    <!-- Backup controller params -->
+    <param name="yawrate_k0"                      value="0.5"/>
+    <param name="yawrate_kd"                      value="1.0"/>
+    <param name="max_yawrate"                     value="$(arg max_yawrate)"/>
+    <param name="max_backward_speed"              value="0.5"/>
+    <param name="backup_lookahead_dist"           value="0.75"/>
+    <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
+
+    <!-- Motion filter parameters -->
+    <param name="fwd_speed_lp_filter_const_up"      value=".9"/>
+    <param name="fwd_speed_lp_filter_const_down"    value=".9"/>
+    <param name="yaw_rate_lp_filter_const_up"      value=".25"/>
+    <param name="yaw_rate_lp_filter_const_down"    value=".25"/>
+    <param name="max_forward_speed"                value="$(arg max_forward_speed)"/>
+
+    <!-- Safety params -->
+    <param name="enable_husky_safety"             value="$(arg enable_husky_safety)"/>
+    <param name="close_side_speed"                value="0.1"/>
+    <param name="enable_small_field_assist"       value="$(arg enable_sf_assist)"/>
+    <param name="beacon_clear_motion_duration"          value="1.5"/>
+    <param name="beacon_drop_motion_settle_duration"    value="2.0"/>
+
+    <param name="slow_down_percent"                     value="15"/>
+
+    <param name="enable_beacon_replan"                  value="$(arg enable_beacon_replan)"/>
+    <param name="enable_beacon_avoid"                   value="false"/>
+    <param name="beacon_avoid_heading_limit"            value="1.0"/>
+    <param name="beacon_avoid_linear_dist"              value="0.5"/>
+
+  </node>
+
+</launch>

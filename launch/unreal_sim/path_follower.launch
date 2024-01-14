@@ -1,0 +1,39 @@
+<launch>
+
+  <arg name="vehicle_name"          default="H01"/>
+  <arg name="max_yawrate"           default="0.5"/>
+  <arg name="max_forward_speed"     default="1.0"/>
+  <arg name="lookahead_distance"    default="1.5"/>
+  <arg name="yawrate_k0"            default="1.0"/>
+  <arg name="yawrate_kd"            default="1.0"/>
+  <arg name="yaw_error_k"           default="1.0"/>
+
+  <arg name="sim"                   default="false"/>
+  <arg name="path_topic"            default="scan_plan_node/path_out"/>
+  <arg name="odom_topic"            default="unreal/odom"/>
+
+  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance">
+
+    <remap from="path_follower/odometry"        to="$(arg odom_topic"/>
+    <remap from="path_follower/path"            to="$(arg path_topic)"/>
+
+    <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
+    <param name="loop_rate"                       value="20.0"/>
+
+    <param name="yawrate_k0"                      value="$(arg yawrate_k0)"/>
+    <param name="yawrate_kd"                      value="$(arg yawrate_kd)"/>
+    <param name="yawrate_max"                     value="$(arg max_yawrate)"/>
+    <param name="max_forward_speed"               value="$(arg max_forward_speed)"/>
+    <param name="yaw_error_k"                     value="$(arg yaw_error_k)"/>
+    <param name="turn_in_place_thresh"            value="1.5"/>
+    <param name="end_turn_in_place_thresh"        value="0.1"/>
+    <param name="turn_in_place_yawrate"           value="0.4"/>
+    <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
+    <param name="enable_speed_regulation"         value="true"/>
+    <param name="stopping_distance"               value="0.4"/>
+    <param name="slow_down_distance"              value="0.65"/>
+    <param name="sim_start"                       value="$(arg sim)"/>
+
+  </node>
+
+</launch>
