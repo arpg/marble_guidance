@@ -140,7 +140,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
     for(int i = l-1; i >= 0; i--){
       //dist = distanceTwoPoints3D(current_pos_, path_poses[i].pose.position);
       dist = distanceTwoPoints2D(current_pos_, path_poses[i].pose.position);
-      //ROS_INFO("index: %d, dist: %f", i, dist);
+      // ROS_INFO("index: %d, dist: %f, condition: %b", i, dist, dist <= lookahead_dist_thresh_);
       if(dist <= lookahead_dist_thresh_){
 
         lookahead_pose_ = path_poses[i].pose;
@@ -153,7 +153,7 @@ bool pathFollower::findLookahead(nav_msgs::Path path){
       }
 
       if(i == 0){
-        //ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
+        ROS_INFO_THROTTLE(5.0, "Error, could not find lookahead on current path.");
         have_lookahead = false;
         if(dist <= 2.0*lookahead_dist_thresh_){
 
@@ -230,7 +230,7 @@ void pathFollower::computeControlCommands(){
       yawrate_cmd_ = 0.0;
     }
   } else {
-    //ROS_INFO_THROTTLE(5.0,"Do not have a current lookahead point.");
+    ROS_INFO_THROTTLE(5.0,"Do not have a current lookahead point.");
     u_cmd_ = 0.0;
     yawrate_cmd_ = 0.0;
   }
