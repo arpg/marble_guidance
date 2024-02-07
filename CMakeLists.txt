@@ -95,10 +95,11 @@ add_executable(trajectory_generator src/trajectory_generator.cpp)
 target_link_libraries(trajectory_generator trajectory_generator_node ${catkin_LIBRARIES})
 
 add_library(backup_detector src/backup_detector.cpp)
-#add_dependencies(backup_detector ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(backup_detector ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(backup_detector ${catkin_LIBRARIES} )
 
 add_executable(backup_detector_node src/backup_detector_node.cpp)
+add_dependencies(backup_detector_node ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(backup_detector_node backup_detector ${catkin_LIBRARIES})
 
 add_library(motion_command_filter src/motion_command_filter.cpp)
