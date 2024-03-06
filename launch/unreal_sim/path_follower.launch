@@ -12,9 +12,9 @@
   <arg name="path_topic"            default="scan_plan_node/path_out"/>
   <arg name="odom_topic"            default="unreal/odom"/>
 
-  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance">
+  <node name="path_follower" type= "path_follower_node" pkg="marble_guidance" output="screen">
 
-    <remap from="path_follower/odometry"        to="$(arg odom_topic"/>
+    <remap from="path_follower/odometry"        to="odometry"/>
     <remap from="path_follower/path"            to="$(arg path_topic)"/>
 
     <param name="vehicle_name"                    value="$(arg vehicle_name)"/>
@@ -30,7 +30,7 @@
     <param name="turn_in_place_yawrate"           value="0.4"/>
     <param name="lookahead_distance_threshold"    value="$(arg lookahead_distance)"/>
     <param name="enable_speed_regulation"         value="true"/>
-    <param name="stopping_distance"               value="0.4"/>
+    <param name="stopping_distance"               value="0.2"/>
     <param name="slow_down_distance"              value="0.65"/>
     <param name="sim_start"                       value="$(arg sim)"/>
 

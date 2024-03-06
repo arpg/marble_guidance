@@ -11,16 +11,17 @@
   <arg name="yaw_error_k"             default="1.5"/>
 
   <arg name="path_topic"               default="planned_path"/>
+  <arg name="odom_topic"               default="odometry"/>
   <!--<arg name="path_topic"               default="path_stitched"/> -->
   <arg name="cmd_vel_topic"            default="unreal/cmd_vel"/>
 
   <arg name="map_res"        default=".15"/>
 
   <!-- Path follower -->
-  <include file="$(find marble_guidance)/launch/common/path_follower.launch">
+  <include file="$(find marble_guidance)/launch/unreal_sim/path_follower.launch">
 
 			<arg name="path_topic"          value="$(arg path_topic)"/>
-
+      <arg name="odom_topic"          value="$(arg odom_topic)"/>
       <arg name="vehicle_name"        value="$(arg vehicle_name)"/>
       <arg name="max_yawrate"         value="$(arg max_yawrate)" />
       <arg name="max_forward_speed"   value="$(arg max_forward_speed)" />
